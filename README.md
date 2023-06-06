@@ -20,10 +20,10 @@ The $r$th-order [Krylov Subspace](https://en.wikipedia.org/wiki/Krylov_subspace)
 $$ \mathcal{K}_r(A,b) = \text{span} \, \{ b, Ab, A^2b, \ldots, A^{r-1}b \} $$
 
 ## **Generalized minimal residual method (GMRES)**
-The [GMRES($m$)](https://en.wikipedia.org/wiki/Generalized_minimal_residual_method) method approximates the solution to the linear system $Ax=b$ at the $j$-th restart cycle using the previous residual, $r_{j-1}=b-Ax_{j-1}$, by constructing a $m$th-order Krylov subspace. The $j$-th approximation is built as
+The [GMRES($m$)](https://en.wikipedia.org/wiki/Generalized_minimal_residual_method) method approximates the solution to the linear system $Ax=b$ at the $j$-th restart cycle using the previous residual, $r_{j-1}=b-Ax_{j-1}$, by constructing a $m$th-order Krylov subspace. The $j$-th approximation is built as:
 
-$$ x_j= x_{j-1}+ \mathcal{K}_m(A,r_{j-1}) $$
+$$ x_j= x_{j-1}+ \mathcal{K}_m (A,r_{j-1}) $$
 
 where the index $m$ denotes that the restarting parameter was set to the value $m$. GMRES($m$) obtains an approximate solution which minimizes the $2$-norm of the residual $r_j$, i.e.,
 
-$$ \min_{x_{j}\in x_{j-1} + \mathcal{K}_m(A,r_{j-1})}   \parallel b-Ax_{j} \parallel. $$
+$$ \min_{x_{j}\in x_{j-1} + \mathcal{K}_m (A,r_{j-1})}   \parallel b-Ax_{j} \parallel. $$
