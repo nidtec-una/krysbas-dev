@@ -22,8 +22,8 @@ $$ \mathcal{K}_r(A,b) = \text{span} \lbrace b, Ab, A^2b, \ldots, A^{r-1}b \rbrac
 ## **Generalized minimal residual method (GMRES)**
 The [GMRES($m$)](https://en.wikipedia.org/wiki/Generalized_minimal_residual_method) method approximates the solution to the linear system $Ax=b$ at the $j$-th restart cycle using the previous residual, $r_{j-1}=b-Ax_{j-1}$, by constructing a $m$th-order Krylov subspace. The $j$-th approximation is built as:
 
-$$ x_{j} = x_{j-1} + \mathcal{K}_m (A,r_{j-1}) $$
+$$ x_{j} = x_{j-1} + \mathcal{K}_{m} (A,r_{j-1}) $$
 
 where the index $m$ denotes that the restarting parameter was set to the value $m$. GMRES($m$) obtains an approximate solution which minimizes the $2$-norm of the residual $r_j$, i.e.,
 
-$$ \min_{x_{j}\in x_{j-1} + \mathcal{K}_m (A,r_{j-1})}   \parallel b-Ax_{j} \parallel. $$
+$$ \min_{x_{j}\in x_{j-1} + \mathcal{K}_{m} (A,r_{j-1})}   \parallel b-Ax_{j} \parallel. $$
