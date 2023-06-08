@@ -1,5 +1,5 @@
 # [KRYSBAS](https://github.com/nidtec-una/krysbas-dev)
-A repository for KRYlov Basic Adaptive Solvers for Sparse Linear Systems. Developed at the [Scientific Computing and Applied Mathematics](https://nidtec.pol.una.py/ccyma/) group at the [NIDTEC](https://nidtec.pol.una.py/) research center of the [Polytechnic Faculty, National University of Asunción, Paraguay](https://www.pol.una.py/).
+A repository for KRYlov Subspace-Based Adaptive Solvers for Sparse Linear Systems. Developed at the [Scientific Computing and Applied Mathematics](https://nidtec.pol.una.py/ccyma/) group at the [NIDTEC](https://nidtec.pol.una.py/) research center of the [Polytechnic Faculty, National University of Asunción, Paraguay](https://www.pol.una.py/).
 
 ## **Table of Contents**
 1. [Introduction](#introduction)
