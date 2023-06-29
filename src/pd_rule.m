@@ -1,3 +1,4 @@
+% Comentarios
 function miter = pdrule(m,minitial,mmin,res,iter,mstep,mmax, alpha, delta) %implementacion Cabral
 
  ap=0;
