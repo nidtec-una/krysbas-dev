@@ -1,6 +1,18 @@
 % Modificado por geem (junio 2023)
-function [vec_sol, vecnormy, xx]=mi_LGMRESE(A,b,mLE, dLE, lLE, ...
-    max_ciclos, tol, alpha, delta, color, print, Name_Matrix) %Time Control 
+function [vec_sol, vecnormy, xx]=adaptive_LGMRESE(A,b,mLE, dLE, lLE, ...
+    max_ciclos, tol, alpha, delta, color, print, Name_Matrix) %Time Control
+% Description:
+% adaptive_LGMRESE is a modified implementation of the restarted Generalized
+% Minimal Residual Error, performed by changing the structure of the Krylov 
+% subspace with either approximation errors or harmonic Ritz values whether 
+% stagnation at certain outer tierations is detected or not.
+%
+% References:
+% 
+% Cabral, J. C., Schaerer, C. E., & Bhaya, A. (2020). Improving GMRES(m)
+% using an adaptive switching controller. Numerical Linear Algebra with 
+% Applications, 27(5), e2305.
+% 
 n = size(A,1);
 opts.tol= eps;
 maxit=max_ciclos;
@@ -79,7 +91,7 @@ z=[];
     x0=xm;
     
     if norm_y < delta  %para el caso de estancamiento en el primer ciclo.
-        flag2=1; % Los vectores de error de aproximación no sirven
+        flag2=1; % Los vectores de error de aproximaciï¿½n no sirven
     else
         flag2=0;
     end  
@@ -551,3 +563,4 @@ sum_s = sum(log_de_s);
 vec_sol = [tiempo restart sum_s];
 vecnormy = lognormy;
 xx = xm;
+fprintf("End of function");
