@@ -5,6 +5,7 @@ A repository for KRYlov Subspace-Based Adaptive Solvers for Sparse Linear System
 1. [Introduction](#introduction)
     - [Krylov Subspace Methods](#krylov-subspace-methods)
 2. [Generalized minimal residual method (GMRES)](#generalized-minimal-residual-method-gmres)
+3. [The adaptive approach](#the-adaptive-approach)
 
 ## **Introduction**
 The main goal of this library is to propose control strategies for Krylov Subspace iterative methods, which is supported on new paradigms of computational architectures aiming at their stability, robustness and speed. Two types of algorithms will be considered:
@@ -22,7 +23,7 @@ The $r$-th order [Krylov Subspace](https://en.wikipedia.org/wiki/Krylov_subspace
 ```
 
 ## **Generalized minimal residual method (GMRES)**
-The [GMRES(m)](https://en.wikipedia.org/wiki/Generalized_minimal_residual_method) method approximates the solution to the linear system $Ax=b$ at the $j$-th restart cycle using the previous residual, $r_{j-1}=b-Ax_{j-1}$, by constructing a $m$th-order Krylov subspace. The $j$-th approximation is built as:
+The [GMRES(m)](https://en.wikipedia.org/wiki/Generalized_minimal_residual_method) (Saad) method approximates the solution to the linear system $Ax=b$ at the $j$-th restart cycle using the previous residual, $r_{j-1}=b-Ax_{j-1}$, by constructing a $m$th-order Krylov subspace. The $j$-th approximation is built as:
 
 ```math
 x_{j} = x_{j-1} + \mathcal{K}_{m} (A,r_{j-1})
@@ -33,3 +34,21 @@ where the index $m$ denotes that the restarting parameter was set to the value $
 ```math
 \min_{x_{j}\in x_{j-1} + \mathcal{K}_{m} (A,r_{j-1})}   \parallel b-Ax_{j} \parallel. $$
 ```
+In practice:
+
+* if $m$ is not appropriate, then GMRES($m$) stagnates (the residual norm reduces very slowly),
+* important information about $\mathcal{K}_{m} (A,r_{j-1})$ is lost in the restarting process.
+
+## **The adaptive approach**
+In this repository, a combination of strategies that improve the convergence of GMRES($m$) is presented. Some techniques are:
+
+1. **Adaptive controllers** : control-theory based, proportional-derivative controllers that modify the restarting parameter $m$ when stagnation is detected (Cuevas).
+
+```math
+aqui va la formula PD rule?
+```
+
+2. **Enriching the Krylov Subspace by switching techniques**: the Krylov search subspace is augmented by aggregating either error approximation vectors of the current subspace before restart (Baker) or Harmonic Ritz vectors (Morgan) in the case the previous ones do not help to improve the rate of convergence. The switching strategy has been studied in (Cabral).
+
+## **References**
+(add references here?)
