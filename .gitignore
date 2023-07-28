@@ -1,1 +1,6 @@
-/src/test_algoritmos.asv
+/src/*.asv
+/src/PD_GMRES_m_1.*
+/src/PD_GMRES_M_1_test.*
+/src/adaptive_LGMRESE_test.m
+/src/mi_LGMRESE.m
+/src/pdrule.m

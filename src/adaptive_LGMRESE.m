@@ -1,12 +1,37 @@
 % Modificado por geem (junio 2023)
 function [vec_sol, vecnormy, xx]=adaptive_LGMRESE(A,b,mLE, dLE, lLE, ...
-    max_ciclos, tol, alpha, delta, color, print, Name_Matrix) %Time Control
+    max_iter, tol, alpha, delta, color, print, Name_Matrix) %Time Control
 % Description:
+% 
 % adaptive_LGMRESE is a modified implementation of the restarted Generalized
-% Minimal Residual Error, performed by changing the structure of the Krylov 
-% subspace with either approximation errors or harmonic Ritz values whether 
-% stagnation at certain outer tierations is detected or not.
+% Minimal Residual Error (Saad, 198x), performed by changing the structure 
+% of the Krylov subspace with either approximation errors (cite) or 
+% harmonic Ritz values whether (cite) stagnation at certain outer iterations 
+% is detected or not.
 %
+% Input Parameters:
+%
+% A:        n-by-n matrix
+%           left-hand side of the linear system Ax = b
+%
+% b:        n-by-1 vector
+%           right-hand side of the linear system Ax = b
+%
+% mLE:      int
+%           initial number of Arnoldi vectors
+%
+% dLE:      int
+%           maximum number of harmonic Ritz vectors
+%
+% lLE:      int
+%           maximum number of approximation error vectors
+%
+% tol:      float
+%           tolerance error threshold for relative residual norm
+%           
+% max_iter: int
+%
+% 
 % References:
 % 
 % Cabral, J. C., Schaerer, C. E., & Bhaya, A. (2020). Improving GMRES(m)
@@ -15,7 +40,7 @@ function [vec_sol, vecnormy, xx]=adaptive_LGMRESE(A,b,mLE, dLE, lLE, ...
 % 
 n = size(A,1);
 opts.tol= eps;
-maxit=max_ciclos;
+maxit=max_ciclos; % maximum number of outer iterations
 x0=zeros(n,1);
 m=mLE;
 d=dLE;
@@ -23,12 +48,20 @@ l=lLE;
 s = m + d +l;
 ST=s;
 m_max = 96;
+d_max = d;
+l_max = l;
+logres = zeros(1,maxit*(m_max+d_max+l_max)+1);
 flag=0;
 flag2=0;
-restart=1; % Primer ciclo de reinicio
+% NEW
+restart=1; % Outer-iteration counter
 r=b-A*x0;
+inner_it = 0; % Inner-iteration counter
+f_res = fopen('logres.txt', 'a');
+% NEW
 res(1,:)=norm(r);
 beta= res(1,1);
+logres = zeros()
 logres(1,:)= 1; %norm(r)/norm(ro)=1 
 iter(1,:)=restart;
 log_de_m(iter(size(iter,1),:),1)=m;
@@ -96,6 +129,11 @@ z=[];
         flag2=0;
     end  
     logres(size(logres,1)+1,:)=norm(b-A*xm)/res(1,1);
+    % NEW
+    % GUARDAR ESTE h(j+1,j)???
+    inner
+    fprintf(f_res, 'Inner iteration: %f\n', h(j+1,j));
+    % NEW
     lognormy(size(logres,1)+1,:)=norm_y;
     
 %%%%% Calculo de z(k) para iteracion 1
@@ -182,6 +220,10 @@ while flag==0   %Mientras no se alcance convergencia.
                     w(:,j)=w(:,j)-h(i,j)*v(:,i);
                 end
                 h(j+1,j)=norm(w(:,j));
+                % NEW
+                % GUARDAR ESTE h(j+1,j)???
+                fprintf(f_res, 'Inner iteration %d: %f\n', ciclo + j, h(j+1,j));
+                % NEW
                 if h(j+1,j)==0
                     s=j;
                     h2=zeros(s+1,s);   
@@ -246,6 +288,10 @@ while flag==0   %Mientras no se alcance convergencia.
             log_de_s(iter(size(iter,1),:),1)=s;
             logres(size(logres,1)+1,:)=norm(b-A*xm)/res(1,1);
             lognormy(size(logres,1)+1,:)=norm_y;
+            
+            % NEW!
+            inner_it = size(logresm, 1);
+            % NEW!
             
             if norm(b-A*xm)/res(1,1) <tol  || size(logres,1)== maxit 
             
@@ -407,6 +453,10 @@ while flag==0   %Mientras no se alcance convergencia.
         %logres(size(logres,1)+1,:)=abs(g(s+1,1)/res(1,1));
         logres(size(logres,1)+1,:)=norm(b-A*xm)/res(1,1);
         lognormy(size(logres,1)+1,:)=norm_y;
+        
+        % NEW!
+        % inner_it = size(logresm, 1)
+        % NEW!
 
             if norm(b-A*xm)/res(1,1) <tol  || size(logres,1)==maxit   
                 %empleando �ltima componente de g como residuo
@@ -564,3 +614,5 @@ vec_sol = [tiempo restart sum_s];
 vecnormy = lognormy;
 xx = xm;
 fprintf("End of function");
+% NEW
+fclose(f_res)
