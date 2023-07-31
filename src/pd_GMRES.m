@@ -1,5 +1,6 @@
-function [tiempo_C, log_res] = PD_GMRES_m_1(A, b, m_PD, alpha, delta, ...
+function [tiempo_C, log_res] = pd_GMRES(A, b, m_PD, alpha, delta, ...
                                            iter_max)
+% Based on PG_GMRES_m_1.m by Juan Carlos Cabral
 % Agregar tol? 
 % 
 % Description:
