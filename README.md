@@ -51,4 +51,4 @@ aqui va la formula PD rule?
 2. **Enriching the Krylov Subspace by switching techniques**: the Krylov search subspace is augmented by aggregating either error approximation vectors of the current subspace before restart (Baker) or Harmonic Ritz vectors (Morgan) in the case the previous ones do not help to improve the rate of convergence. The switching strategy has been studied in (Cabral).
 
 ## **References**
-(add references here?)
+(add references here? Yes, please.)
