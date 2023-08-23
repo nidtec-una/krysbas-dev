@@ -1,0 +1,77 @@
+---
+name: 'MATLAB tests'
+
+# Credits: This workflow has been modified from
+# https://github.com/Remi-Gau/template_matlab_analysis/blob/main/.github/workflows/matlab_test_and_coverage.yaml
+
+# Installs
+# - MATLAB github action
+# - MOXunit
+# - MOcov (This we don't do)
+# Get test data
+# cd into .github/workflows
+# run .github/workflows/tests_matlab.m
+# If tests pass, uploads coverage to codecov
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: ['*']
+
+jobs:
+  matlab_tests:
+
+    strategy:
+      matrix:
+        # version: [R2021a, R2021b, R2022a, R2022b, R2023a]
+        version: [R2023a]
+        # os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
+      fail-fast: false  # Don't cancel all jobs if one fails
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Install MATLAB
+      uses: matlab-actions/setup-matlab@v1.2.4
+      with:
+        release: ${{ matrix.version }}
+
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+        fetch-depth: 1
+
+    - name: Install Moxunit and MOcov
+      run: |
+        git clone https://github.com/MOxUnit/MOxUnit.git --depth 1
+      #  git clone https://github.com/MOcov/MOcov.git --depth 1
+
+    - name: Run tests
+      uses: matlab-actions/run-command@v1.2.1
+      with:
+        command: cd(fullfile(getenv('GITHUB_WORKSPACE'), '.github', 'workflows')); run run_tests_ci;
+
+    - name: Check logs unix
+      # if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      if: matrix.os == 'ubuntu-latest'  # only ubuntu for now
+      run: grep -q 0 test_report.log || { echo "Some tests failed. Check the 'Run tests' step to know which ones." >&2; exit 1; }
+    # - name: Check logs windows
+    #   if: matrix.os == 'windows-latest'
+    #   run: |
+    #     if (-not (Get-Content test_report.log | Select-String -Pattern "0")) {
+    #       throw "Some tests failed.  Check the 'Run tests' step to know which ones."
+    #     }
+
+    # We'll try to add coverage later
+    # - name: Code coverage
+    #  if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+    #  no coverage on windows as long as MOcov does not support it
+    #  see https://github.com/MOcov/MOcov/issues/28
+    #  uses: codecov/codecov-action@v3
+    #  with:
+    #    file: coverage.xml   # optional
+    #    flags: ${{ matrix.os }}_matlab-${{ matrix.version }}
+    #    name: codecov-umbrella   # optional
+    #    fail_ci_if_error: true   # optional (default = false)
