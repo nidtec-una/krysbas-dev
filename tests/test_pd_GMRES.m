@@ -1,6 +1,6 @@
-load 'matrices\sherman5.mat';
-A=Problem.A; 
-b=Problem.b; 
+% load 'matrices\sherman5.mat';
+% A=Problem.A;
+% b=Problem.b;
 % OR
 % b=b(:,1);
 % OR
