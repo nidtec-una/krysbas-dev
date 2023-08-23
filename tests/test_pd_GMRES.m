@@ -1,12 +1,30 @@
-load 'matrices\sherman5.mat';
-A=Problem.A; 
-b=Problem.b; 
+function test_suite = test_pd_GMRES %#ok<*STOUT>
+    %
+    % Modified from:
+    % https://github.com/Remi-Gau/template_matlab_analysis/blob/main/tests/test_my_fibonacci.m
+
+    try % assignment of 'localfunctions' is necessary in Matlab >= 2016
+        test_functions = localfunctions(); %#ok<*NASGU>
+    catch % no problem; early Matlab versions can use initTestSuite fine
+    end
+
+    initTestSuite;
+
+end
+
+function test_pd_GMRES_dummy()
+
+    assertEqual(10, 8 + 2)
+
+end
+
+% load 'matrices\sherman5.mat';
+% A=Problem.A;
+% b=Problem.b;
 % OR
 % b=b(:,1);
 % OR
 % b=ones(size(A,1),1);
-
-
 
 %Calculo de coeficientes de polinomio de GMRES(m)
 %         n1 = m;
@@ -43,7 +61,7 @@ b=Problem.b;
 %         coef = [];
 %         coef = CF';
 %         COEF(size(COEF, 1) + 1, :) = coef;
-% % Graficos de polinomios        
+% % Graficos de polinomios
 % %         x = linspace(0, 5);
 % % hold on 
 % % grid on
@@ -65,22 +83,22 @@ b=Problem.b;
 %tiempo = cputime - inicio;     %Imprime tiempo de ejecuci�n
 %figure(1)
 %subplot(1, 1, 1);
- %semilogy(log_res, color)
+%semilogy(log_res, color)
 
- %legend(['PD-GMRES(30;2;0.8); cycle =  ', num2str(last_cycle), ...
- %'; t =  ', num2str(tiempo), ' s.'],'Location','SouthOutside');
+%legend(['PD-GMRES(30;2;0.8); cycle =  ', num2str(last_cycle), ...
+%'; t =  ', num2str(tiempo), ' s.'],'Location','SouthOutside');
  
- %title(Name_Matrix);
- %title(color);
-% % xlabel('Number of Restart Cycle');ylabel('|rj|/|r0|');
-% % legend(['PD-GMRES(27,alpha_{P} = ', num2str(alpha_0),',alpha_{D} = ', num2str(delta_0),'), t =  ', num2str(tiempo)],'Location','Best');
-% %title(['Example 2.2 - Complementary cycles of GMRES. Nl = ', num2str(Nl),'; delta = ', num2str(dl)])
- %hold on
-% figure(2)
-% %subplot(1,1,1);
- %plot(m_iteracion,color)
- %xlabel('Number of restart cycles');ylabel('m, restart parameters');
- %hold on
+%title(Name_Matrix);
+%title(color);
+%xlabel('Number of Restart Cycle');ylabel('|rj|/|r0|');
+%legend(['PD-GMRES(27,alpha_{P} = ', num2str(alpha_0),',alpha_{D} = ', num2str(delta_0),'), t =  ', num2str(tiempo)],'Location','Best');
+%title(['Example 2.2 - Complementary cycles of GMRES. Nl = ', num2str(Nl),'; delta = ', num2str(dl)])
+%hold on
+%figure(2)
+%subplot(1,1,1);
+%plot(m_iteracion,color)
+%xlabel('Number of restart cycles');ylabel('m, restart parameters');
+%hold on
 
 %legend('Baker-GMRES(27,3)', 'Location','EastOutside');
 %hold on
