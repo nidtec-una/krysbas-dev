@@ -1,7 +1,7 @@
-function test_suite = test_my_fibonacci %#ok<*STOUT>
+function test_suite = test_my_summa %#ok<*STOUT>
     %
-    % (C) Copyright 2022 Remi Gau
-    % Adapted from Remi Gau 22
+    % Modified from:
+    % https://github.com/Remi-Gau/template_matlab_analysis/blob/main/tests/test_my_fibonacci.m
 
     try % assignment of 'localfunctions' is necessary in Matlab >= 2016
         test_functions = localfunctions(); %#ok<*NASGU>
@@ -12,29 +12,8 @@ function test_suite = test_my_fibonacci %#ok<*STOUT>
 
 end
 
-function test_my_summa()
+function test_my_summa_dummy()
 
-    % THEN
-    % assertEqual(results, [0, 1, 1, 2, 3, 5, 8, 13]);
     assertEqual(2, 1 + 1)
 
 end
-
-%function test_my_fibonacci_default()
-%
-%    % WHEN
-%    results = my_fibonacci();
-%
-%    % THEN
-%    assertEqual(results, [0, 1, 1, 2, 3, 5, 8]);
-%
-%end
-%
-%function test_my_fibonacci_error()
-%
-%    if ~is_octave()
-%        assertExceptionThrown(@()my_fibonacci(-1),
-%'MATLAB:InputParser:ArgumentFailedValidation');
-%    end
-%
-%end
