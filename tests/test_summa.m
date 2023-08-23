@@ -1,4 +1,4 @@
-function test_suite = test_my_summa %#ok<*STOUT>
+function test_suite = test_summa %#ok<*STOUT>
     %
     % Modified from:
     % https://github.com/Remi-Gau/template_matlab_analysis/blob/main/tests/test_my_fibonacci.m
@@ -12,7 +12,7 @@ function test_suite = test_my_summa %#ok<*STOUT>
 
 end
 
-function test_my_summa_dummy()
+function test_summa_dummy()
 
     assertEqual(2, 1 + 1)
 
