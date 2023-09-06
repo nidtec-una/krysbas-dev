@@ -1,16 +1,16 @@
 % Modificado por geem (julio 2017)
-% Gr�fico GMRES: norma residual normalizada |rj|/|r0| en funcion del numero
+% Gráfico GMRES: norma residual normalizada |rj|/|r0| en funcion del numero
 % de ciclos
-% Notaci�n: R. Morgan, "GMRES with Deflated Restarting"
+% Notación: R. Morgan, "GMRES with Deflated Restarting"
 % Inputs include A,x0,b,m,d,tol
 
 % clear all
-function [vec_sol] = mi_GMRES_E(A,b, m1, d1, itermax, tol, color,print, Name_Matrix)
+function [vec_sol] = gmres_e(A,b, m1, d1, itermax, tol, color,print, Name_Matrix)
 tic;         %Time Control
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %tol=1e-10;
 %opts.tol=  opts_tol;
-opts.tol=  eps; % � 1e-6, 1e-9, 1e-12
+opts.tol=  eps; % ó 1e-6, 1e-9, 1e-12
 %maxit = 1000
 maxit=itermax;
 x0=zeros(size(A,1),1);
@@ -213,8 +213,8 @@ while flag==0
     %logres(size(logres,1)+1,:)=abs(g(s+1,1));
     %logres(restart+1,:)=abs(g(s+1,1));
 
-    if (abs (g(s+1,1)))/res(1,1) <tol  || size(logres,1)==maxit   %empleando �ltima componente de g como residuo
-    %if (abs (g(s+1,1))) <tol  || size(logres,1)==maxit    %empleando �ltima componente de g como residuo
+    if (abs (g(s+1,1)))/res(1,1) <tol  || size(logres,1)==maxit   %empleando ï¿½ltima componente de g como residuo
+    %if (abs (g(s+1,1))) <tol  || size(logres,1)==maxit    %empleando ï¿½ltima componente de g como residuo
         flag=1;
         %residuo= (abs (g(s+1,1)))/res(1,1);
         residuo= abs (g(s+1,1));        
@@ -276,7 +276,7 @@ while flag==0
     end
 end  %while flag
 
-t1 = toc;     %Imprime tiempo de ejecuci�n
+t1 = toc;     %Imprime tiempo de ejecuciï¿½n
 if print == 1
     figure(3)
     semilogy(logres,color,'LineWidth',2)
