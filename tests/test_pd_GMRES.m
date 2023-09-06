@@ -97,6 +97,7 @@ function test_pd_GMRES_1()
         %sol7(size(sol7,1)+1,:)= [time];
     end
     
+    % We probably need to add here a moxunit test assertElementsAlmostEqual(u1,u3)
     u4 = u3 - u1;
     disp(max(u4))
 
