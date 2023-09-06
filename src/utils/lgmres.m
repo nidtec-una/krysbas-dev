@@ -5,7 +5,7 @@
 % "Accelerating the Convergence of Restarted GMRES" ====> LGMRES(m,k)
 % Comentarios: ...
 %clear all
-function [vec_sol]=mi_LGMRES(A, b, m1, k1, itermax, tol, color, print, Name_Matrix)
+function [vec_sol]=lgmres(A, b, m1, k1, itermax, tol, color, print, Name_Matrix)
 maxit=itermax;
 x0=zeros(size(A,1),1);
 m = m1;
