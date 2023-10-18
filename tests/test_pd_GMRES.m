@@ -75,7 +75,7 @@ function test_pd_GMRES_1()
     rootFolder = fileparts(pwd); % go to the root folder
     srcFolder = fullfile(rootFolder, 'src'); % enter the data folder
     cd(srcFolder)
-    %     [time, logres_pd_gmres]=pd_gmres(A,b, mPD, alpha, delta,itermax); 
+    %     [time, logres_pd_gmres]=pd_GMRES(A,b, mPD, alpha, delta,itermax); 
     % Parameters
     alpha=-3; %2
     delta=5; %0.8
