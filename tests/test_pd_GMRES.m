@@ -93,7 +93,7 @@ function test_pd_GMRES_1()
         rootFolder = fileparts(pwd); % go to the root folder
         srcFolder = fullfile(rootFolder, 'src'); % enter the data folder
         cd(srcFolder)
-        [time, logres_pd_gmres, u3]=pd_gmres(A,b, mPD, alpha, delta,itermax);
+        [time, logres_pd_gmres, u3]=pd_GMRES(A,b, mPD, alpha, delta,itermax);
         %sol7(size(sol7,1)+1,:)= [time];
     end
     
