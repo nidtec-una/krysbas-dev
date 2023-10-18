@@ -1,4 +1,4 @@
-function [tiempoC, logres, xx]=pd_gmres(A,b, mPD, alpha, delta,itermax)
+function [tiempoC, logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax)
 % Based on PD_GMRES_m_1.m by Juan Carlos Cabral
 % Agregar tol? 
 % 
