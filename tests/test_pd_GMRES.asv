@@ -55,7 +55,7 @@ function test_pd_GMRES_01_poisson()
     % Description:
     % ============
     % Solve a 1D-Poisson equation at [aStart, aEnd] = [0, 1]
-    % - u''(x) = f(x)
+    % u''(x) = f(x)
     % subject to
     % u(0) = g(0) = 0, u(1) = g(1) = 1;
     % where
@@ -63,9 +63,9 @@ function test_pd_GMRES_01_poisson()
     % Discretization results in a linear system Au = b
     
     % Discretization grid
-    f = @(x) -6*x;
+    f = @(x) 6*x;
     g = @(x) x.^3;
-    NODES = 9;
+    NODES = 5;
     INNERNODES = NODES-2;
     aStart = 0;
     aEnd = 1;
@@ -96,7 +96,7 @@ function test_pd_GMRES_01_poisson()
     % Parameters for PD_GMRES
     alpha=-3; %2
     delta=5; %0.8
-    opts_tol=1e-9;
+    opts_tol=1e-15;
     itermax=1000;
     p = 1;
     for i=1:p
@@ -106,17 +106,15 @@ function test_pd_GMRES_01_poisson()
         rootFolder = fileparts(pwd); % go to the root folder
         srcFolder = fullfile(rootFolder, 'src'); % enter the data folder
         cd(srcFolder)
-        uBackslash  = A\b;
         [time, logres_pd_gmres, uPD_GMRES]=pd_GMRES(A,b, mPD, alpha, delta,itermax,opts_tol);
-        uPD = uPD_GMRES;
-        uExact = g( linspace(aStart + h, aEnd - h, INNERNODES) )';
         %sol7(size(sol7,1)+1,:)= [time];
     end
     
     % assert test
-    %A
-    %bTransp = b'
-    %norm(uPD_GMRES-uExact)
+    A
+    bTransp = b'
+    uBackslash  = A\b;
+    norm(uPD_GMRES-uExact)
     assertElementsAlmostEqual(uPD_GMRES, uExact)
 
 end

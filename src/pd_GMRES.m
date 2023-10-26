@@ -1,4 +1,4 @@
-function [tiempoC, logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax)
+function [tiempoC, logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax,tol)
 % Based on PD_GMRES_m_1.m by Juan Carlos Cabral
 % Agregar tol? 
 % 
@@ -45,7 +45,7 @@ function [tiempoC, logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax)
 
 tic;         %Time Control 
 %load wang4.mat; load b_wang4.mat;
-tol=1e-9;
+%tol=1e-9; %tol is now controlled by input
 %A=Problem.A;
 %b=Problem.b;
 [s,n]=size (A);
@@ -229,7 +229,7 @@ while flag==0
         xx = xm;
  %       residuo= (abs (g(m+1,1)))/res(1,1);
     else
-        x0=xm;                        %update and restart
+        x0=xm ;                       %update and restart
         restart=restart+1;
     end
   
