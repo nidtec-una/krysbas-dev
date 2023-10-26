@@ -103,9 +103,9 @@ function test_pd_GMRES_01_poisson()
         color_pd_gmres='b';
         mPD=3;
         %alpha=2;
-        rootFolder = fileparts(pwd); % go to the root folder
-        srcFolder = fullfile(rootFolder, 'src'); % enter the data folder
-        cd(srcFolder)
+        %rootFolder = fileparts(pwd); % go to the root folder
+        %srcFolder = fullfile(rootFolder, 'src'); % enter the data folder
+        %cd(srcFolder)
         uBackslash  = A\b;
         [time, logres_pd_gmres, uPD_GMRES]=pd_GMRES(A,b, mPD, alpha, delta,itermax,opts_tol);
         uPD = uPD_GMRES;
