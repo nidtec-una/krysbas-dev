@@ -89,9 +89,9 @@ function test_pd_GMRES_01_poisson()
     % PD_GMRES(m)
     % The original idea was to compute the average execution time,
     % we may discuss if this is still necessary 
-    rootFolder = fileparts(pwd); % go to the root folder
-    srcFolder = fullfile(rootFolder, 'src'); % enter the data folder
-    cd(srcFolder)
+    %rootFolder = fileparts(pwd); % go to the root folder
+    %srcFolder = fullfile(rootFolder, 'src') % enter the data folder
+    %cd(srcFolder)
     % [time, logres_pd_gmres]=pd_GMRES(A,b, mPD, alpha, delta,itermax); 
     % Parameters for PD_GMRES
     alpha=-3; %2
