@@ -1,4 +1,4 @@
-function [logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax,tol)
+function [logres, xx]=pd_GMRES(A,b, mPD, alphaP, alphaD,itermax,tol)
 %
 % Description:
 %
@@ -25,10 +25,11 @@ function [logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax,tol)
 % max_iter: int
 %           maximum number of (inner?) iterations
 %
-% alpha:    DESCRIPTION NEEDED
+% alphaP:   float
+%           proportional coefficient from PD controller for 'm'
 %
-% delta:    DESCRIPTION NEEDED
-%
+% alphaD:   float
+%           derivative coefficient from PD controller for 'm'
 %
 % Output parameters:
 %
@@ -49,12 +50,9 @@ function [logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax,tol)
 x0 = zeros(size(b,1),1); % x0: First guess for solution vector 'x' 
 mInitial = mPD;
 mmin = 1;
-mmax = n-1; %It can be considered that it does not have an upper bound, before 1000 iterations it cannot reach mmax with alpha=-3 and delta=5
+mmax = n-1; %It can be considered that it does not have an upper bound, before 1000 iterations it cannot reach mmax with alphaP=-3 and alphaD=5
 mstep=1;
 maxit=itermax;
-%Parameters 
-alpha0=alpha;
-delta0=delta;
 flag=0;
 if (s~=n)
     error ('Matrix not square');
@@ -77,7 +75,7 @@ iter(1,:)=restart;
 mIteracion(1,1)=mInitial;
 while flag==0
     if iter(size(iter,1),:) ~=1
-        [miter]=pd_rule(m,mInitial,mmin,res,iter(size(iter,1),:),mstep, mmax,alpha0, delta0); %cab
+        [miter]=pd_rule(m,mInitial,mmin,res,iter(size(iter,1),:),mstep, mmax,alphaP, alphaD); %cab
         m=miter(1,1);
         mInitial=miter(1,2);
     else

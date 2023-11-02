@@ -25,7 +25,7 @@ function test_pd_GMRES_01_poisson()
     % f(x) = 6*x; g(x) = x^3
     % Discretization results in a linear system Au = b
     
-    % Discretization grid
+    % Source term and boundary values
     f = @(x) -6*x;
     g = @(x) x.^3;
     NODES = 9;
@@ -34,12 +34,16 @@ function test_pd_GMRES_01_poisson()
     aEnd = 1;
     h = ( aEnd - aStart ) / (NODES - 1);
     
-    % Left-hand side matrix 'A'
+    % Left-hand side (LHS) matrix 'A'
+    % LHS is composed by the finite-difference coefficients for u''(x)
     A = 2*eye(INNERNODES) - diag(ones(INNERNODES-1,1), 1) - diag(ones(INNERNODES-1, 1), -1);
     
-    % Right-hand side 'b'
+    % Right-hand side 'b' (RHS)
+    % RHS is composed by the contributions from 
+    % the boundary conditions g(x) and the source term f(x).
     b = h*h*f( linspace(aStart + h, aEnd - h, INNERNODES) )'; % b = h^2*f(x)
-    % Dirichlet conditions are here
+    % Add contribution from Dirichlet nodes to vector 'b'
+    % b(1, 1) = g( astart );
     b(INNERNODES,1) = b(INNERNODES,1) + g( aEnd );
     
     % Exact solution 'uExact'
@@ -59,7 +63,6 @@ function test_pd_GMRES_01_poisson()
     for i=1:p
         color_pd_gmres='b';
         mPD=3;
-        uBackslash  = A\b;
         [~, uPD_GMRES]=pd_GMRES(A,b, mPD, alpha, delta,itermax,opts_tol);
         uExact = g( linspace(aStart + h, aEnd - h, INNERNODES) )';
     end
