@@ -87,7 +87,8 @@ if (j~=1)
 end
 
 if (size (b)~=size(x0))
-    error('Initial guess not right size');
+    error('Incorrect size of initial guess vector x0');
+
 end
 
 restart=1;
