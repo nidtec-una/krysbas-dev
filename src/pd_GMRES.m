@@ -57,13 +57,15 @@ if (s~=n)
 end
 [i,j]=size (b);
 if (s~=i)
-    error ('Vector does not match size of matrix A');
+    error ('Vector b does not match size of matrix A');
+
 end
 if (j~=1)
     error ('Vector is not a column vector')
 end
 if (size (b)~=size(x0))
-    error('Initial guess not right size');
+    error('Incorrect size of initial guess vector x0');
+
 end
 restart=1;
 r0=b-A*x0;
