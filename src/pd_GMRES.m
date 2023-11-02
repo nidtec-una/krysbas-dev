@@ -78,7 +78,8 @@ end
 [i,j]=size (b);
 
 if (s~=i)
-    error ('Vector does not match size of matrix A');
+    error ('Vector b does not match size of matrix A');
+
 end
 
 if (j~=1)
