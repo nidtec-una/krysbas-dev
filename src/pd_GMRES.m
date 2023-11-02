@@ -1,8 +1,8 @@
 function [tiempoC, logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax,tol)
-% 
+%
 % Description:
-% 
-% PD_GMRES_m_1 is a modified implementation of the restarted Generalized
+%
+% pd_GMRES is a modified implementation of the restarted Generalized
 % Minimal Residual Error or GMRES(m) (Saad, 1986), performed by using a 
 % proportional-derivative control-inspired law to update adaptively the 
 % restarting parameter m before each restart.
@@ -17,7 +17,7 @@ function [tiempoC, logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax,tol)
 %           right-hand side of the linear system Ax = b
 %
 % m_PD:     int
-%           irestarting parameter
+%           restart parameter (similar to 'restart' in MATLAB)
 %
 % tol:      float
 %           tolerance error threshold for relative residual norm
@@ -34,12 +34,15 @@ function [tiempoC, logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax,tol)
 % log_res:  (1 up to to max_iter)-by-1 vector
 %           relative residual norms
 %
+% xx:       n-by-1 vector
+%           approximate solution of the linear system 
+%
 % References:
-% 
+%
 % Nunez, R. C., Schaerer, C. E., & Bhaya, A. (2018). A proportional-derivative 
 % control strategy for restarting the GMRES (m) algorithm. Journal of 
 % Computational and Applied Mathematics, 337, 209-224.
-% 
+%
 
 [s, n] = size(A);
 x0 = zeros(size(b,1),1); % x0: First guess for solution vector 'x' 
@@ -81,7 +84,7 @@ while flag==0
     else
         m=mInitial;
     end
-    miteracion(iter(size(iter,1),:)+1,1)=m;
+    mIteracion(iter(size(iter,1),:)+1,1)=m;
     v=zeros(n,m+1);
     w=zeros(n,m);
     r=b-A*x0;
