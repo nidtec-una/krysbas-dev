@@ -1,5 +1,4 @@
-% Comentarios
-function miter = pd_rule(m,minitial,mmin,res,iter,mstep,mmax, alpha, delta) %implementacion Cabral
+function miter = pdrule(m,minitial,mmin,res,iter,mstep,mmax, alpha, delta) %implementacion Cabral
 
  ap=0;
  ad=0;
