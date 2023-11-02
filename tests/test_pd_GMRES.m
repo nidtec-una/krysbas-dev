@@ -12,43 +12,6 @@ function test_suite = test_pd_GMRES %#ok<*STOUT>
 
 end
 
-% function test_pd_GMRES_0()  
-% 
-%     sol7=[]; %PD-GMRES(m)
-% 
-%     % Load A and b from the sherman3 matrix
-%     rootFolder = fileparts(pwd); % go to the root folder
-%     dataFolder = fullfile(rootFolder, 'data'); % enter the data folder
-%     exampleProblem = fullfile(dataFolder, 'sherman3.mat');
-%     load(exampleProblem); %   Problem  %
-% 
-%     % Matrix A and right-hand-side b
-%     A=Problem.A;
-%     b=Problem.b;
-% 
-%     % Parameters
-%     alpha=-3; %2
-%     delta=5; %0.8
-%     opts_tol=1e-9;
-%     itermax=1000;
-%     p = 1;
-% 
-%     %%       %PD-GMRES(m)
-%     % The original idea was to compute the average execution time,
-%     % we may discuss if this is still necessary 
-%     for i=1:p
-%         color_pd_gmres='b';
-%         mPD=30;
-%         %alpha=2;
-%         rootFolder = fileparts(pwd); % go to the root folder
-%         srcFolder = fullfile(rootFolder, 'src'); % enter the data folder
-%         cd(srcFolder)
-%         [time, logres_pd_gmres, xx]=pd_gmres(A,b, mPD, alpha, delta,itermax);
-%         sol7(size(sol7,1)+1,:)= [time];
-%     end
-% 
-% end
-
 function test_pd_GMRES_01_poisson() 
     % Change name (change test?) by boundary conditions 
     % (Dirichlet, Neumann, Robin, mixed).
@@ -73,66 +36,34 @@ function test_pd_GMRES_01_poisson()
     
     % Left-hand side matrix 'A'
     A = 2*eye(INNERNODES) - diag(ones(INNERNODES-1,1), 1) - diag(ones(INNERNODES-1, 1), -1);
-    %A(1, 1:2) = [1 0];x
-    %A(NODES, NODES-1:NODES) = [0 1];
     
     % Right-hand side 'b'
     b = h*h*f( linspace(aStart + h, aEnd - h, INNERNODES) )'; % b = h^2*f(x)
     % Dirichlet conditions are here
-    % b(1,1) = g( aStart );
     b(INNERNODES,1) = b(INNERNODES,1) + g( aEnd );
     
     % Exact solution 'uExact'
-    uExact = g( linspace(aStart + h, aEnd - h, INNERNODES) )'
+    uExact = g( linspace(aStart + h, aEnd - h, INNERNODES) )';
     
     % CALL ALGORITHMS: PD_GMRES, ADAPTIVE_GMRES, SWITCH_GMRES, etc.
     % PD_GMRES(m)
     % The original idea was to compute the average execution time,
     % we may discuss if this is still necessary 
-    %rootFolder = fileparts(pwd); % go to the root folder
-    %srcFolder = fullfile(rootFolder, 'src') % enter the data folder
-    %cd(srcFolder)
-    % [time, logres_pd_gmres]=pd_GMRES(A,b, mPD, alpha, delta,itermax); 
+
     % Parameters for PD_GMRES
-    alpha=-3; %2
-    delta=5; %0.8
+    alpha=-3;
+    delta=5;
     opts_tol=1e-9;
     itermax=1000;
     p = 1;
     for i=1:p
         color_pd_gmres='b';
         mPD=3;
-        %alpha=2;
-        %rootFolder = fileparts(pwd); % go to the root folder
-        %srcFolder = fullfile(rootFolder, 'src'); % enter the data folder
-        %cd(srcFolder)
         uBackslash  = A\b;
-        [time, logres_pd_gmres, uPD_GMRES]=pd_GMRES(A,b, mPD, alpha, delta,itermax,opts_tol);
-        uPD = uPD_GMRES;
+        [~, uPD_GMRES]=pd_GMRES(A,b, mPD, alpha, delta,itermax,opts_tol);
         uExact = g( linspace(aStart + h, aEnd - h, INNERNODES) )';
-        %sol7(size(sol7,1)+1,:)= [time];
     end
-    
-    % assert test
-    %A
-    %bTransp = b'
-    %norm(uPD_GMRES-uExact)
+
     assertElementsAlmostEqual(uPD_GMRES, uExact)
 
 end
-
-function test_dir_2d_4x4()
-    % Description:
-    % ============
-    %
-    % Solve a 2D-Poisson equation at [0, 1] x [0, 1]
-    % - u_xx - u_yy = f(x, y) 
-    % subject to
-    % u = 0 along the boundary
-    % where
-    % f(x, y) = 20*pi*pi*sin(2*pi*x)*sin(4*pi*y)
-    % Analytical solution:
-    % u(x, y) = sin(2*pi*x)*sin(4*pi*y)
-
-    % Discretization grid
-    

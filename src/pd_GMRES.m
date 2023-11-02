@@ -1,4 +1,4 @@
-function [tiempoC, logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax,tol)
+function [logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax,tol)
 %
 % Description:
 %
@@ -25,11 +25,12 @@ function [tiempoC, logres, xx]=pd_GMRES(A,b, mPD, alpha, delta,itermax,tol)
 % max_iter: int
 %           maximum number of (inner?) iterations
 %
+% alpha:    DESCRIPTION NEEDED
+%
+% delta:    DESCRIPTION NEEDED
+%
 %
 % Output parameters:
-%
-% tiempo_C: float
-%           Computational time of the algorithm
 %
 % log_res:  (1 up to to max_iter)-by-1 vector
 %           relative residual norms
@@ -61,14 +62,12 @@ end
 [i,j]=size (b);
 if (s~=i)
     error ('Vector b does not match size of matrix A');
-
 end
 if (j~=1)
     error ('Vector is not a column vector')
 end
 if (size (b)~=size(x0))
     error('Incorrect size of initial guess vector x0');
-
 end
 restart=1;
 r0=b-A*x0;
