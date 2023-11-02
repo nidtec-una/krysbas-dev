@@ -120,3 +120,19 @@ function test_pd_GMRES_01_poisson()
     assertElementsAlmostEqual(uPD_GMRES, uExact)
 
 end
+
+function test_dir_2d_4x4()
+    % Description:
+    % ============
+    %
+    % Solve a 2D-Poisson equation at [0, 1] x [0, 1]
+    % - u_xx - u_yy = f(x, y) 
+    % subject to
+    % u = 0 along the boundary
+    % where
+    % f(x, y) = 20*pi*pi*sin(2*pi*x)*sin(4*pi*y)
+    % Analytical solution:
+    % u(x, y) = sin(2*pi*x)*sin(4*pi*y)
+
+    % Discretization grid
+    
