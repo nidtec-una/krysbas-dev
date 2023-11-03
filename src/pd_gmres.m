@@ -1,4 +1,4 @@
-function [x, flag, logres]=pd_gmres(A,b, mPD, alphaP, alphaD,itermax,tol)
+function [x, flag, relres, logres]=pd_gmres(A,b, mPD, alphaP, alphaD,itermax,tol)
 %
 % Description:
 %
@@ -135,10 +135,12 @@ while flag==0
     iter(restart+1,:)=restart+1;
     logres(size(logres,1)+1,:)=abs(g(m+1,1)/res(1,1));
     if abs (g(m+1,1))/res(1,1) <tol   || size(logres,1)==maxit   % Using last component of g as residual
-        flag=1;
-        x = xm;
+        flag=1;  % solution has converged
+        x = xm;  % solution vector
     else
         x0=xm ;                       %update and restart
         restart=restart+1;
     end
+    % Compute the relative residual
+    relres = norm(b-A*xm)/norm(b);  % JCC: Can you check if this is correct?
 end
