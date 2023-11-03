@@ -50,7 +50,7 @@ function [logres, xx]=pd_GMRES(A,b, mPD, alphaP, alphaD,itermax,tol)
 x0 = zeros(size(b,1),1); % x0: First guess for solution vector 'x' 
 mInitial = mPD;
 mmin = 1;
-mmax = n-1; %It can be considered that it does not have an upper bound, before 1000 iterations it cannot reach mmax with alphaP=-3 and alphaD=5
+mmax = n-1;
 mstep=1;
 maxit=itermax;
 flag=0;

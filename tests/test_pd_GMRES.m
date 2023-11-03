@@ -51,21 +51,15 @@ function test_pd_GMRES_01_poisson()
     
     % CALL ALGORITHMS: PD_GMRES, ADAPTIVE_GMRES, SWITCH_GMRES, etc.
     % PD_GMRES(m)
-    % The original idea was to compute the average execution time,
-    % we may discuss if this is still necessary 
 
-    % Parameters for PD_GMRES
+    % PD_GMRES
     alpha=-3;
     delta=5;
     opts_tol=1e-9;
     itermax=1000;
-    p = 1;
-    for i=1:p
-        color_pd_gmres='b';
-        mPD=3;
-        [~, uPD_GMRES]=pd_GMRES(A,b, mPD, alpha, delta,itermax,opts_tol);
-        uExact = g( linspace(aStart + h, aEnd - h, INNERNODES) )';
-    end
+    mPD=3;
+    [~, uPD_GMRES]=pd_GMRES(A,b, mPD, alpha, delta,itermax,opts_tol);
+    uExact = g( linspace(aStart + h, aEnd - h, INNERNODES) )';
 
     assertElementsAlmostEqual(uPD_GMRES, uExact)
 
