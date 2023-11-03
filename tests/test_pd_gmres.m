@@ -1,4 +1,4 @@
-function test_suite = test_pd_GMRES %#ok<*STOUT>
+function test_suite = test_pd_gmres %#ok<*STOUT>
     %
     % Modified from:
     % https://github.com/Remi-Gau/template_matlab_analysis/blob/main/tests/test_my_fibonacci.m
