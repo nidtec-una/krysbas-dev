@@ -1,4 +1,4 @@
-function [x, logres]=pd_gmres(A,b, mPD, alphaP, alphaD,itermax,tol)
+function [x, flag, logres]=pd_gmres(A,b, mPD, alphaP, alphaD,itermax,tol)
 %
 % Description:
 %
