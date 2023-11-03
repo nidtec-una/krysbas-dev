@@ -1,4 +1,4 @@
-function [x, flag, relres, iter, resvec]=pd_gmres(A,b, mPD, alphaP, alphaD,itermax,tol)
+function [x, flag, relres, iter, resvec, time]=pd_gmres(A,b, mPD, alphaP, alphaD,itermax,tol)
 %
 % Description:
 %
@@ -67,12 +67,16 @@ end
 if (size (b)~=size(x0))
     error('Incorrect size of initial guess vector x0');
 end
+
 restart=1;
 r0=b-A*x0;
 res(1,:)=norm(r0);
 resvec(1,:)=(norm(r0)/res(1,1));
 iter(1,:)=restart;
 mIteracion(1,1)=mInitial;
+
+tic();  % start measuring CPU time
+
 while flag==0
     if iter(size(iter,1),:) ~=1
         [miter]=pd_rule(m,mInitial,mmin,res,iter(size(iter,1),:),mstep, mmax,alphaP, alphaD); %cab
@@ -134,13 +138,15 @@ while flag==0
     res(restart+1,:)=abs(g(m+1,1));
     iter(restart+1,:)=restart+1;
     resvec(size(resvec,1)+1,:)=abs(g(m+1,1)/res(1,1));
-    if abs (g(m+1,1))/res(1,1) <tol   || size(resvec,1)==maxit   % Using last component of g as residual
+    if abs(g(m+1, 1)) / res(1, 1) < tol || size(resvec, 1) == maxit % Using last component of g as residual
         flag=1;  % solution has converged
         x = xm;  % solution vector
     else
-        x0=xm ;                       %update and restart
+        x0=xm;  %update and restart
         restart=restart+1;
     end
     % Compute the relative residual
     relres = norm(b-A*xm)/norm(b);  % JCC: Can you check if this is correct?
 end
+
+time = toc();  % record CPU time
