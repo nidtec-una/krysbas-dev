@@ -4,3 +4,4 @@
 /src/adaptive_LGMRESE_test.m
 /src/mi_LGMRESE.m
 /src/pdrule.m
+/tests/*.asv
