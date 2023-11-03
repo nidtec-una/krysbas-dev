@@ -1,4 +1,4 @@
-function [x, flag, relres, logres, iter]=pd_gmres(A,b, mPD, alphaP, alphaD,itermax,tol)
+function [x, flag, relres, iter, resvec]=pd_gmres(A,b, mPD, alphaP, alphaD,itermax,tol)
 %
 % Description:
 %
@@ -70,7 +70,7 @@ end
 restart=1;
 r0=b-A*x0;
 res(1,:)=norm(r0);
-logres(1,:)=(norm(r0)/res(1,1));
+resvec(1,:)=(norm(r0)/res(1,1));
 iter(1,:)=restart;
 mIteracion(1,1)=mInitial;
 while flag==0
@@ -133,8 +133,8 @@ while flag==0
     xm=x0+V*minimizer;
     res(restart+1,:)=abs(g(m+1,1));
     iter(restart+1,:)=restart+1;
-    logres(size(logres,1)+1,:)=abs(g(m+1,1)/res(1,1));
-    if abs (g(m+1,1))/res(1,1) <tol   || size(logres,1)==maxit   % Using last component of g as residual
+    resvec(size(resvec,1)+1,:)=abs(g(m+1,1)/res(1,1));
+    if abs (g(m+1,1))/res(1,1) <tol   || size(resvec,1)==maxit   % Using last component of g as residual
         flag=1;  % solution has converged
         x = xm;  % solution vector
     else
