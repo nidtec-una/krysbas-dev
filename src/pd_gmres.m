@@ -1,4 +1,4 @@
-function [x, flag, relres, iter, resvec, time]=pd_gmres(A,b, mPD, alphaP, alphaD,itermax,tol)
+function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, m0, tol, maxit, x0, alphaP, alphaD)
 %
 % Description:
 %
@@ -46,13 +46,134 @@ function [x, flag, relres, iter, resvec, time]=pd_gmres(A,b, mPD, alphaP, alphaD
 % Computational and Applied Mathematics, 337, 209-224.
 %
 
+%% Sanity checks and default values of parameters
+
+% ----> Matrix A
+
+% Check whether A is non-empty
+if isempty(A)
+    error("Matrix A cannot be empty.")
+end
+
+% Check whether A is square
+[rowsA, colsA] = size(A);
+if rowsA ~= colsA
+    error("Matrix A must be square.")
+end
+
+n = rowsA;
+delete rowsA colsA
+
+% ----> Vector b
+
+% Check whether b is non-empty
+if isempty(b)
+    error("Vector b cannot be empty.")
+end
+
+% Check whether b is a column vector
+[rowsb, colsb] = size(b);
+if colsb ~= 1
+    error("Vector b must be a column vector.")
+end
+
+% Check whether b has the same number of rows as b
+if rowsb ~= rowsA
+    error("Dimension mismatch between matrix A and vector b.")
+end
+
+delete rowsb colsb
+
+% ----> Restart parameter m0
+
+% In the case where the restart parameter is not specified explicitly as an
+% input argument, pd_gmres() behaves identically to the unrestarted gmres()
+% with a fixed number of iterations given by min(n, 10).
+%
+% There are three possibilities where this might happen: 
+%   (1) If only two arguments are given i.e., 'A' and 'b'.
+%   (2) If 'm0' equals the dimension of 'A' i.e., 'm0' = 'n'.
+%   (3) If an empty matrix is given as restart parameter, i.e., 'm0' = [].
+%
+% In cases (2) and (3), we still allow the user to give 'tol' and 'x0'.
+% Since the number of iterations are fixed, a warning is raised if the
+% input argument 'maxit' is given.
+if isempty(m0) || m0 == n || nargs < 3
+    % Tolerance specification
+    if exist('tol', 'var') == 1
+        if isempty(tol) == 1
+            tol = 1e-6; % use default tolerance
+        else
+            ... % use user-specified tolerance
+        end
+    else
+        tol = 1e-6; % use default tolerance
+    end
+
+    % Initial guess specification
+    if exist('x0', 'var') == 1
+        if isempty(x0) == 1
+            x0 = zeros(n, 1);
+        else
+            ... % use user-specified initial guess
+        end
+    else
+        x0 = zeros(n, 1);  % use default initial guess
+    end
+
+    % Warn user if 'maxit' is given
+    if exist("maxit", "var") == 1
+        warning("Number of maximum iterations will be overwritten to min(n, 10).")
+    end
+    
+    % We are now ready to call the pd_gmres_unrestarted() routine   
+    % Note: We could have called gmres() directly. However, pd_gmres()
+    % there are subtle differences in the output. For instance, pd_gmres()
+    % stores only the last residual in the vector resvec, whereas gmres()
+    % stores all the residuals. In addition, gmres() does not provide the
+    % cpu_time natively.
+    [x, flag, relres, iter, resvec, time] = pd_gmres_unrestarted(A, b, tol, x0);
+    return
+end
+
+% Check whether m0 is strictly less than the dimensionality of the system
+if m0 > n
+    error("Restart parameter m0 cannot be greater than n.")
+end
+
+% ----> Tolerance
+if isempty(tol) || nargs < 4
+    tol = 1e-6;
+end
+
+% ----> Maximum number of iterations maxit
+if isempty(maxit) || nargs < 5
+    maxit = min(round(n/m0), 10);
+end
+
+% ----> Initial guess x0
+if isempty(x0) || nargs < 6
+    x = zeros(n, 1);
+end
+
+% Check whether x0 is a column vector
+rowsx0, colsx0 = size(x0);          
+if colsx0 ~= 1
+    error("Initial guess x0 is not a column vector.")
+end
+
+% Check whether x0 has the right dimension
+if rowsb ~= n
+    error("Initial guess x0 does not have the correct dimension.")
+end
+
 [s, n] = size(A);
 x0 = zeros(size(b,1),1); % x0: First guess for solution vector 'x' 
-mInitial = mPD;
+mInitial = m0;
 mmin = 1;
 mmax = n-1;
 mstep=1;
-maxit=itermax;
+maxit=maxit;
 flag=0;
 if (s~=n)
     error ('Matrix not square');
@@ -146,7 +267,22 @@ while flag==0
         restart=restart+1;
     end
     % Compute the relative residual
-    relres = norm(b-A*xm)/norm(b);  % JCC: Can you check if this is correct?
+    relres = norm(b-A*xm)/norm(b);
 end
 
 time = toc();  % record CPU time
+
+end
+
+
+function [x, flag, relres, iter, resvec, time] = pd_gmres_unrestarted(A, b, tol, x0)
+    % This is the so-called unrestarted version of the PDGMRES algorithm
+    % In pratice, this routine calls the bult-in gmres() function but
+    % outputs slightly different variables.
+    
+    % Unrestarted version of the PD-GMRES
+    tic
+    [x, flag, relres, iter, resvec] = gmres(A, b, [], tol, [], [], [], x0);
+    resvec = [resvec(1); resvec(end)];
+    time = toc();
+end
