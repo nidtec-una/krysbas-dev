@@ -1,4 +1,4 @@
-function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, m0, tol, maxit, x0, alphaP, alphaD)
+function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, m0, tol, maxit, x0, alphaP, alphaD, varargin)
 %PD-GMRES   Proportional-Derivate GMRES(m)
 % 
 %   pd_gmres is a modified implementation of the restarted Generalized
@@ -74,7 +74,8 @@ if rowsA ~= colsA
     error("Matrix A must be square.")
 end
 
-n = rowsA; delete rowsA colsA;
+n = rowsA;
+clear rowsA colsA;
 
 % ----> Sanity checks on vector b
 
@@ -94,7 +95,7 @@ if rowsb ~= n
     error("Dimension mismatch between matrix A and vector b.")
 end
 
-delete rowsb colsb;
+clear rowsb colsb;
 
 % ----> Default values and sanity checks for parameter m0
 
@@ -106,7 +107,7 @@ delete rowsb colsb;
 %   (1) If only two arguments are given i.e., A and b.
 %   (2) If m0 equals the dimension of A i.e., m0 = n.
 %   (3) If an empty matrix is given as restart parameter, i.e., m0 = [].
-if isempty(m0) || m0 == n || nargin < 3
+if (nargin < 3) || isempty(m0) || (m0 == n)
     restarted = false;  % use unrestarted pd_gmres()
 else
     restarted = true;  % use restarted pd_gmres()
@@ -121,7 +122,7 @@ if restarted
 end
 
 % ----> Default value and sanity checks for tol
-if isempty(tol) || nargin < 4
+if (nargin < 4) || isempty(tol)
     tol = 1e-6;
 end
 
@@ -134,7 +135,7 @@ elseif tol >= 1
 end
 
 % ----> Default value for maxit
-if isempty(maxit) || nargin < 5
+if (nargin < 5) || isempty(maxit)
     if restarted
         % If the restarted version of pd_gmres() version must be used
         % but maxit is not given, we take the min between n/m0 and 10.
@@ -146,28 +147,30 @@ if isempty(maxit) || nargin < 5
 else
     
 % ----> Default value and sanity checks for initial guess x0
-if isempty(x0) || nargin < 6
+if (nargin < 6) || isempty(x0) 
     x0 = zeros(n, 1);
 end
 
 % Check whether x0 is a column vector
-[~, colsx0] = size(x0);          
+[rowsx0, colsx0] = size(x0);          
 if colsx0 ~= 1
     error("Initial guess x0 is not a column vector.")
 end
 
 % Check whether x0 has the right dimension
-if rowsb ~= n
+if rowsx0 ~= n
     error("Initial guess x0 does not have the correct dimension.")
 end
 
+clear rowsx0 colsx0;
+
 % ----> Default value for propotional parameter alphaP
-if isempty(alphaP) || nargin < 7
+if (nargin < 7) || isempty(alphaP)
     alphaP = -3;
 end
 
 % ----> Default value for proportional parameter alphaD
-if isempty(alphaD) || nargin < 8
+if (nargin < 8) || isempty(alphaD)
     alphaD = 5;
 end
 
