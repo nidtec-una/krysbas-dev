@@ -144,7 +144,7 @@ if (nargin < 5) || isempty(maxit)
         % If the unrestarted version must ...
         maxit = min(n, 10);
     end
-else
+end
     
 % ----> Default value and sanity checks for initial guess x0
 if (nargin < 6) || isempty(x0) 
@@ -182,7 +182,7 @@ end
 % initial and the last residual (contrary to gmres() that stores all the
 % residuals).
 if ~restarted
-    tic
+    tic();
     [x, flag, relres, iter, resvec] = gmres(A, b, [], tol, maxit, [], [], x0);
     resvec = [resvec(1); resvec(end)];
     time = toc();
