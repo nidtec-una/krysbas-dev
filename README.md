@@ -40,7 +40,7 @@ In practice:
 * important information about $\mathcal{K}_{m} (A,r_{j-1})$ is lost in the restarting process.
 
 ## **The adaptive approach**
-In this repository, a combination of strategies that improve the convergence of GMRES($m$) is presented. Some techniques are:
+In this repository, a combination of strategies improving the convergence of GMRES($m$) is presented. Some techniques are:
 
 1. **Adaptive controllers** : control-theory based, proportional-derivative controllers that modify the restarting parameter $m$ when stagnation is detected (Cuevas).
 
