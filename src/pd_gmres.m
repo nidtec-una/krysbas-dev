@@ -106,7 +106,7 @@ delete rowsb colsb;
 %   (1) If only two arguments are given i.e., A and b.
 %   (2) If m0 equals the dimension of A i.e., m0 = n.
 %   (3) If an empty matrix is given as restart parameter, i.e., m0 = [].
-if isempty(m0) || m0 == n || nargs < 3
+if isempty(m0) || m0 == n || nargin < 3
     restarted = false;  % use unrestarted pd_gmres()
 else
     restarted = true;  % use restarted pd_gmres()
@@ -121,7 +121,7 @@ if restarted
 end
 
 % ----> Default value and sanity checks for tol
-if isempty(tol) || nargs < 4
+if isempty(tol) || nargin < 4
     tol = 1e-6;
 end
 
@@ -134,7 +134,7 @@ elseif tol >= 1
 end
 
 % ----> Default value for maxit
-if isempty(maxit) || nargs < 5
+if isempty(maxit) || nargin < 5
     if restarted
         % If the restarted version of pd_gmres() version must be used
         % but maxit is not given, we take the min between n/m0 and 10.
@@ -146,7 +146,7 @@ if isempty(maxit) || nargs < 5
 else
     
 % ----> Default value and sanity checks for initial guess x0
-if isempty(x0) || nargs < 6
+if isempty(x0) || nargin < 6
     x0 = zeros(n, 1);
 end
 
@@ -162,12 +162,12 @@ if rowsb ~= n
 end
 
 % ----> Default value for propotional parameter alphaP
-if isempty(alphaP) || nargs < 7
+if isempty(alphaP) || nargin < 7
     alphaP = -3;
 end
 
 % ----> Default value for proportional parameter alphaD
-if isempty(alphaD) || nargs < 8
+if isempty(alphaD) || nargin < 8
     alphaD = 5;
 end
 
