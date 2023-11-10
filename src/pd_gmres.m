@@ -151,7 +151,7 @@ if isempty(x0) || nargin < 6
 end
 
 % Check whether x0 is a column vector
-rowsx0, colsx0 = size(x0);          
+[~, colsx0] = size(x0);          
 if colsx0 ~= 1
     error("Initial guess x0 is not a column vector.")
 end
