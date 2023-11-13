@@ -1,11 +1,12 @@
 function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, ...
     mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD, varargin)
-%PD-GMRES Proportional-Derivate GMRES(m)
+%PD-GMRES Proportional-Derivative GMRES(m)
 % 
 %   pd_gmres is a modified implementation of the restarted Generalized
-%   Minimal Residual Error or GMRES(m) (Saad, 1986), performed by using
+%   Minimal Residual Error or GMRES(m) [1], performed by using
 %   a proportional-derivative control-inspired law to update adaptively
-%   the restarting parameter m before each restart.
+%   the restarting parameter m before each restart. This implementation
+%   follows closely the one presented in [2].
 %
 %   Signature:
 %   ----------
@@ -68,7 +69,11 @@ function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, ...
 %   References:
 %   -----------
 %
-%   Nunez, R. C., Schaerer, C. E., & Bhaya, A. (2018). A
+%   [1] Saad, Y., & Schultz, M. H. (1986). GMRES: A generalized minimal
+%   residual algorithm for solving nonsymmetric linear systems. SIAM 
+%   Journal on scientific and statistical computing, 7(3), 856-869.
+%
+%   [2] Nunez, R. C., Schaerer, C. E., & Bhaya, A. (2018). A
 %   proportional-derivative control strategy for restarting the GMRES(m)
 %   algorithm. Journal of Computational and Applied Mathematics,
 %   337, 209-224.
