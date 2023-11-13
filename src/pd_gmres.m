@@ -214,12 +214,12 @@ if rowsxInitial ~= n
     error("Initial guess xInitial does not have the correct dimension.")
 end
 
-clear rowsxInitial colsx0;
+clear rowsxInitial colsxInitial;
 
 % ----> Default value for alphaPD
 % The default values for these parameteres were taken from page 217 of [2]
 if (nargin < 9) || isempty(alphaPD)
-    alphaPD = [-5, 3];
+    alphaPD = [-3; 5];
 end
 
 alphaP = alphaPD(1);
@@ -259,10 +259,10 @@ while flag == 0
     if iter(size(iter, 1), :) ~= 1
         [miter] = pd_rule(m, mInitial, mMin, res, ...
             iter(size(iter, 1), :), mStep, mMax, alphaP, alphaD);
-        m=miter(1, 1);
-        mInitial=miter(1, 2);
+        m = miter(1, 1);
+        mInitial = miter(1, 2);
     else
-        m=mInitial;
+        m = mInitial;
     end
     
     mIteration(iter(size(iter, 1), :) + 1, 1) = m;
