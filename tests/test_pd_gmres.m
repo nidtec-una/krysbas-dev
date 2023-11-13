@@ -1,4 +1,4 @@
-function test_suite = test_pd_GMRES %#ok<*STOUT>
+function test_suite = test_pd_gmres %#ok<*STOUT>
     %
     % Modified from:
     % https://github.com/Remi-Gau/template_matlab_analysis/blob/main/tests/test_my_fibonacci.m
@@ -50,17 +50,12 @@ function test_pd_GMRES_01_poisson()
     uExact = g( linspace(aStart + h, aEnd - h, INNERNODES) )';
     
     % CALL ALGORITHMS: PD_GMRES, ADAPTIVE_GMRES, SWITCH_GMRES, etc.
-    % PD_GMRES(m)
-
+    
     % PD_GMRES
-    alpha=-3;
-    delta=5;
-    opts_tol=1e-9;
-    itermax=1000;
-    mPD=3;
-    [~, uPD_GMRES]=pd_GMRES(A,b, mPD, alpha, delta,itermax,opts_tol);
-    uExact = g( linspace(aStart + h, aEnd - h, INNERNODES) )';
+    tol=1e-9; maxit=100; m0=3;
+    uPD_GMRES= pd_gmres(A, b, m0, tol, maxit);
 
+    % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact)
 
 end
