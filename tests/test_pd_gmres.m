@@ -52,8 +52,8 @@ function test_pd_GMRES_01_poisson()
     % CALL ALGORITHMS: PD_GMRES, ADAPTIVE_GMRES, SWITCH_GMRES, etc.
     
     % PD_GMRES
-    tol=1e-9; maxit=100; m0=3;
-    uPD_GMRES= pd_gmres(A, b, m0, tol, maxit);
+    tol=1e-9; maxit=100; mInitial=3;
+    uPD_GMRES= pd_gmres(A, b, mInitial, [], [], tol, maxit);
 
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact)
