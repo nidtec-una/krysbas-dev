@@ -1,4 +1,4 @@
-function test_suite = test_pd_gmres %#ok<*STOUT>
+function test_suite = test_poisson %#ok<*STOUT>
     %
     % Modified from:
     % https://github.com/Remi-Gau/template_matlab_analysis/blob/main/tests/test_my_fibonacci.m
@@ -12,18 +12,18 @@ function test_suite = test_pd_gmres %#ok<*STOUT>
 
 end
 
-function test_pd_GMRES_01_poisson() 
-    % Change name (change test?) by boundary conditions 
-    % (Dirichlet, Neumann, Robin, mixed).
+function test_poisson_1d_dirichlet_bc() 
+    % Test solvers for a 1D-FDM linear system with Dirichlet boundaries.
+    %
     % Description:
     % ============
-    % Solve a 1D-Poisson equation at [aStart, aEnd] = [0, 1]
-    % - u''(x) = f(x)
-    % subject to
-    % u(0) = g(0) = 0, u(1) = g(1) = 1;
-    % where
-    % f(x) = 6*x; g(x) = x^3
-    % Discretization results in a linear system Au = b
+    %   Solve a 1D-Poisson equation in the domain [aStart, aEnd] = [0, 1]
+    %     
+    %                         - u''(x) = f(x)
+    %
+    %   subject to u(0) = g(0) = 0, u(1) = g(1) = 1; where f(x) = 6*x and
+    %   g(x) = x^3.
+    %   Discretization results in a linear system Au = b
     
     % Source term and boundary values
     f = @(x) -6*x;
