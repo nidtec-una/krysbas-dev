@@ -48,7 +48,7 @@ function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, m0, tol, maxit, 
 %   -----------
 %
 %   Nunez, R. C., Schaerer, C. E., & Bhaya, A. (2018). A
-%   proportional-derivative control strategy for restarting the GMRES (m)
+%   proportional-derivative control strategy for restarting the GMRES(m)
 %   algorithm. Journal of Computational and Applied Mathematics,
 %   337, 209-224.
 %
@@ -165,11 +165,15 @@ end
 clear rowsx0 colsx0;
 
 % ----> Default value for propotional parameter alphaP
+% The default value for this parameter was taken from page 217 of
+% https://doi.org/10.1016/j.cam.2018.01.009 
 if (nargin < 7) || isempty(alphaP)
     alphaP = -3;
 end
 
 % ----> Default value for proportional parameter alphaD
+% The default value for this parameter was taken from page 217 of
+% https://doi.org/10.1016/j.cam.2018.01.009 
 if (nargin < 8) || isempty(alphaD)
     alphaD = 5;
 end
@@ -207,7 +211,7 @@ tic();  % start measuring CPU time
 
 while flag==0
     if iter(size(iter,1),:) ~=1
-        [miter]=pd_rule(m,m0,mmin,res,iter(size(iter,1),:),mstep, mmax,alphaP, alphaD); %cab
+        [miter]=pd_rule(m,m0,mmin,res,iter(size(iter,1),:),mstep, mmax,alphaP, alphaD);
         m=miter(1,1);
         m0=miter(1,2);
     else
