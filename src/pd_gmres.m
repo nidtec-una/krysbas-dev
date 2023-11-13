@@ -32,8 +32,11 @@ function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, ...
 %
 %   mMinMax:  2-by-1 vector, optional
 %             Minimum and maximum values of the restart paramter m.
-%             Default is [1; n-1]. Note that  we require 
-%             1 <= mMinMax[1] < mMinMax[2] <= n.
+%             Default is [1; n - 1]. Note that  we require 
+%             1 <= mMinMax(1) < mMinMax(2) <= n. Note that for large
+%             matrices (e.g., > 600), the default value mMinMax(2) = n -1
+%             might result in low convergence. For these cases, following
+%             Ref. [2], we recommend something on the order of [1; 100].
 %
 %   mStep:    int, optional
 %             Step size for incresing the restart parameter m between
