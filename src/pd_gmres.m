@@ -1,12 +1,18 @@
 function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, ...
-    mInitial, tol, maxit, xInitial, alphaP, alphaD, varargin)
-%PD-GMRES   Proportional-Derivate GMRES(m)
+    mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD, varargin)
+%PD-GMRES Proportional-Derivate GMRES(m)
 % 
 %   pd_gmres is a modified implementation of the restarted Generalized
 %   Minimal Residual Error or GMRES(m) (Saad, 1986), performed by using
 %   a proportional-derivative control-inspired law to update adaptively
 %   the restarting parameter m before each restart.
 %
+%   Signature:
+%   ----------
+% 
+%   [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, ...
+%       mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD, varargin)
+%   
 %
 %   Input Parameters:
 %   -----------------
@@ -17,20 +23,34 @@ function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, ...
 %   b:        n-by-1 vector
 %             Right-hand side of the linear system Ax = b.
 %
-%   m0:       int
-%             Restart parameter (similar to 'restart' in MATLAB).
+%   mInitial: int, optional
+%             Initial restart parameter (similar to 'restart' in MATLAB).
+%             If empty, not given, or equal to n, then mInitial is not used
+%             and the full unrestarted gmres algorithm with maxit = min(n,
+%             10) is employed. Note that we require 1 <= mInitial <= n.
 %
-%   tol:      float
-%             Tolerance error threshold for relative residual norm.
+%   mMinMax:  2-by-1 vector, optional
+%             Minimum and maximum values of the restart paramter m.
+%             Default is [1; n-1]. Note that  we require 
+%             1 <= mMinMax[1] < mMinMax[2] <= n.
+%
+%   mStep:    int, optional
+%             Step size for incresing the restart parameter m between
+%             cycles. Default is 1 if n <= 10 and 3 otherwise.
+%
+%   tol:      float, optional
+%             Tolerance error threshold for the relative residual norm.
+%             Default is 1e-6.
 %           
-%   maxit:    int
-%             Maximum number of iterations.
+%   maxit:    int, optional
+%             Maximum number of iterations. 
 %
-%   alphaP:   float
-%             Proportional coefficient from the PD controller.
-%
-%   alphaD:   float
-%             Derivative coefficient from the PD controller.
+%   xInitial: n-by-1 vector, optional
+%             Vector of initial guess. Default is zeros(n, 1).
+% 
+%   alphaPD:  2-by-1 vector, optional
+%             Proportional and derivative coefficients from the
+%             proportional-derivative controller. Default is [-5, 3].
 %
 %   Output parameters:
 %   ------------------
@@ -52,7 +72,6 @@ function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, ...
 %   proportional-derivative control strategy for restarting the GMRES(m)
 %   algorithm. Journal of Computational and Applied Mathematics,
 %   337, 209-224.
-%
 %
 
 % ----> Sanity check on the number of input parameters
@@ -197,7 +216,7 @@ end
 % Restarted version of PD-GMRES
 
 % Algorithm setup 
-mmin = 1;
+%mmin = 1;
 mmax = n-1;
 mstep =1 ;
 flag=0;
@@ -212,7 +231,7 @@ tic();  % start measuring CPU time
 
 while flag==0
     if iter(size(iter,1),:) ~=1
-        [miter]=pd_rule(m,mInitial,mmin,res,iter(size(iter,1),:),mstep, mmax,alphaP, alphaD);
+        [miter]=pd_rule(m,mInitial,mMin,res,iter(size(iter,1),:),mstep, mmax,alphaP, alphaD);
         m=miter(1,1);
         mInitial=miter(1,2);
     else
