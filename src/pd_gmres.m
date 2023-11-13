@@ -1,4 +1,5 @@
-function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, m0, tol, maxit, x0, alphaP, alphaD, varargin)
+function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, ...
+    mInitial, tol, maxit, xInitial, alphaP, alphaD, varargin)
 %PD-GMRES   Proportional-Derivate GMRES(m)
 % 
 %   pd_gmres is a modified implementation of the restarted Generalized
@@ -107,16 +108,16 @@ clear rowsb colsb;
 %   (1) If only two arguments are given i.e., A and b.
 %   (2) If m0 equals the dimension of A i.e., m0 = n.
 %   (3) If an empty matrix is given as restart parameter, i.e., m0 = [].
-if (nargin < 3) || isempty(m0) || (m0 == n)
+if (nargin < 3) || isempty(mInitial) || (mInitial == n)
     restarted = false;  % use unrestarted pd_gmres()
 else
     restarted = true;  % use restarted pd_gmres()
 end
 
 if restarted
-    if m0 <= 0
+    if mInitial <= 0
         error("Restart parameter m0 must be a positive integer.")
-    elseif m0 > n
+    elseif mInitial > n
         error("Restart parameter m0 cannot be greater than n.")
     end
 end
@@ -139,7 +140,7 @@ if (nargin < 5) || isempty(maxit)
     if restarted
         % If the restarted version of pd_gmres() version must be used
         % but maxit is not given, we take the min between n/m0 and 10.
-        maxit = min(ceil(n/m0), 10);
+        maxit = min(ceil(n/mInitial), 10);
     else
         % If the unrestarted version must ...
         maxit = min(n, 10);
@@ -147,12 +148,12 @@ if (nargin < 5) || isempty(maxit)
 end
     
 % ----> Default value and sanity checks for initial guess x0
-if (nargin < 6) || isempty(x0) 
-    x0 = zeros(n, 1);
+if (nargin < 6) || isempty(xInitial) 
+    xInitial = zeros(n, 1);
 end
 
 % Check whether x0 is a column vector
-[rowsx0, colsx0] = size(x0);          
+[rowsx0, colsx0] = size(xInitial);          
 if colsx0 ~= 1
     error("Initial guess x0 is not a column vector.")
 end
@@ -187,7 +188,7 @@ end
 % residuals).
 if ~restarted
     tic();
-    [x, flag, relres, iter, resvec] = gmres(A, b, [], tol, maxit, [], [], x0);
+    [x, flag, relres, iter, resvec] = gmres(A, b, [], tol, maxit, [], [], xInitial);
     resvec = [resvec(1); resvec(end)];
     time = toc();
     return
@@ -201,26 +202,26 @@ mmax = n-1;
 mstep =1 ;
 flag=0;
 restart=1;
-r0=b-A*x0;
+r0=b-A*xInitial;
 res(1,:)=norm(r0);
 resvec(1,:)=(norm(r0)/res(1,1));
 iter(1,:)=restart;
-mIteration(1,1)=m0;
+mIteration(1,1)=mInitial;
 
 tic();  % start measuring CPU time
 
 while flag==0
     if iter(size(iter,1),:) ~=1
-        [miter]=pd_rule(m,m0,mmin,res,iter(size(iter,1),:),mstep, mmax,alphaP, alphaD);
+        [miter]=pd_rule(m,mInitial,mmin,res,iter(size(iter,1),:),mstep, mmax,alphaP, alphaD);
         m=miter(1,1);
-        m0=miter(1,2);
+        mInitial=miter(1,2);
     else
-        m=m0;
+        m=mInitial;
     end
     mIteration(iter(size(iter,1),:)+1,1)=m;
     v=zeros(n,m+1);
     w=zeros(n,m);
-    r=b-A*x0;
+    r=b-A*xInitial;
     beta=norm(r);
     v(:,1)=r/beta; 
     h=zeros(m+1,m);
@@ -266,7 +267,7 @@ while flag==0
         end
     end
     minimizer=R\G;
-    xm=x0+V*minimizer;
+    xm=xInitial+V*minimizer;
     res(restart+1,:)=abs(g(m+1,1));
     iter(restart+1,:)=restart+1;
     resvec(size(resvec,1)+1,:)=abs(g(m+1,1)/res(1,1));
@@ -274,7 +275,7 @@ while flag==0
         flag=1;  % solution has converged
         x = xm;  % solution vector
     else
-        x0=xm;  %update and restart
+        xInitial=xm;  %update and restart
         restart=restart+1;
     end
     % Compute the relative residual
