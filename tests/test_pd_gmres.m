@@ -86,7 +86,8 @@ function test_mInitial_not_given_empty_or_equal_to_n()
 % empty, not given, or equal to the dimension of the linear system n
 
     % Here, we actually solve a linear system and check whether
-    % 'restarted' is false or not
+    % 'restarted' is false or not. This is not ideal, but it might be the
+    % only way to construct the test
 
     A = eye(3);
     b = ones(3, 1);
@@ -103,5 +104,24 @@ function test_mInitial_not_given_empty_or_equal_to_n()
     [~, ~, ~, ~, ~, restarted, ~] = pd_gmres(A, b, 3);
     assert(restarted == false);
 
+end
+
+function test_mInitial_valid_range()
+% Test whether the initial restart parameter 'm' lies between (1, n).
+
+    A = eye(4);
+    b = ones(4, 1);
+
+    % Loop over values that lie outside the range
+    mInitialValues = [-50, 0, length(b) + 1, 100];
+    for i=1:length(mInitialValues)
+        try
+            pd_gmres(A, b, mInitialValues(i))
+        catch ME
+            msg = "mInitial must satisfy: 1 <= mInitial <= n.";
+            assert(matches(ME.message, msg))
+        end
+    end
+            
 end
 

@@ -140,8 +140,8 @@ end
 
 % If the restarted version of pd_gmres will be used, then the value of
 % mInitial must be bounded between 1 and n. 
-if restarted && (mInitial <= 0 || mInitial > n)
-    error("mInitial must satisfy: 0 < mInitial <= n.")
+if restarted && (mInitial < 1 || mInitial > n)
+    error("mInitial must satisfy: 1 <= mInitial <= n.")
 end
 
 % ----> Default values and sanity checks for mMinMax
