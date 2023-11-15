@@ -85,7 +85,7 @@ function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, ...
 % ----> Sanity check on the number of input parameters
 if nargin < 2
     error("Too few input parameters. Expected at least A and b.")
-elseif nargin > 8
+elseif nargin > 9
     error("Too many input parameters.")
 end
 
