@@ -1,5 +1,5 @@
-function [x, flag, relres, iter, resvec, time] = pd_gmres(A, b, ...
-    mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD, varargin)
+function [x, flag, relres, iter, resvec, restarted, time] = pd_gmres(...
+   A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD, varargin)
 %PD-GMRES Proportional-Derivative GMRES(m)
 % 
 %   pd_gmres is a modified implementation of the restarted Generalized
@@ -138,7 +138,9 @@ else
     restarted = true;  % use restarted pd_gmres()
 end
 
-if restarted && (mInitial <= 0) || (mInitial > n)
+% If the restarted version of pd_gmres will be used, then the value of
+% mInitial must be bounded between 1 and n. 
+if restarted && (mInitial <= 0 || mInitial > n)
     error("mInitial must satisfy: 0 < mInitial <= n.")
 end
 
