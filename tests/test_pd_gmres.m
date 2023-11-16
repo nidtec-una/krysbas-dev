@@ -146,10 +146,50 @@ function test_warning_raised_if_mMinMax_given_when_unrestarted()
     mMinMax = [1; 2];
 
     lastwarn('');  % Make sure to clear the last warning message
+    warning('off');  % Avoid showing all warnings
     pd_gmres(A, b, mInitial, mMinMax);  % Call pd_gmres
+    warning('on');  % Show all warnings again
     [warnMsg, ~] = lastwarn;  % retrieve warning message
     assert(matches(warnMsg, "mMinMax was given but will not be used."))
 
 end
 
+function test_mMinMax_valid_range()
+% Test the range of validity of the minimum and maximum values of m
+    
+    A = eye(3);
+    b = ones(3, 1);
+    mInitial = 1;
 
+    mMinMaxValues = cell(3, 1);
+    mMinMaxValues{1} = [0; 1];  % invalid mMin
+    mMinMaxValues{2} = [1; 4];  % invalid mMax
+    mMinMaxValues{3} = [1; 1];  % non-monotonically increasing
+
+    msg = "mMinMax must satisfy: 1 <= mMinMax(1) < mMinMax(2) <= n.";
+    for ii=1:length(mMinMaxValues)
+        try
+            pd_gmres(A, b, mInitial, mMinMaxValues{ii});
+        catch ME
+            assert(matches(ME.message, msg));
+        end
+    end
+
+end
+
+function test_mMinMax_valid_range_wrt_mInitial()
+% Test the validity of mMinMax with respect to mInitial
+
+    A = eye(3);
+    b = ones(3, 1);
+    mInitial = 1;
+    mMinMax = [2; 3];
+
+    try
+        pd_gmres(A, b, mInitial, mMinMax)
+    catch ME
+        msg = 'mMinMax must satisfy: mMinMax(1) <= mInitial <= mMinMax(2).';
+        assert(matches(ME.message, msg));
+    end
+
+end
