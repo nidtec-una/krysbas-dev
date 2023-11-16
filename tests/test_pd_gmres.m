@@ -234,7 +234,6 @@ function test_mStep_valid_range()
 
 end
 
-
 function test_vector_xInitial_not_column_vector()
 % Test if error is raised when xInitial is not a column vector
     
