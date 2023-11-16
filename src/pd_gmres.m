@@ -54,7 +54,7 @@ function [x, flag, relres, iter, resvec, restarted, time] = pd_gmres(...
 % 
 %   alphaPD:  2-by-1 vector, optional
 %             Proportional and derivative coefficients from the
-%             proportional-derivative controller. Default is [-5, 3].
+%             proportional-derivative controller. Default is [-3, 5].
 %
 %   Output parameters:
 %   ------------------
