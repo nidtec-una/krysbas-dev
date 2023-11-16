@@ -193,3 +193,43 @@ function test_mMinMax_valid_range_wrt_mInitial()
     end
 
 end
+
+function test_warning_raised_if_mStep_given_when_unrestarted()
+% Test if a warning is raised when mStep is given but restarted=false
+
+    % Inputs that will generated the expected warning
+    A = eye(3);
+    b = ones(3, 1);
+    mInitial = [];
+    mMinMax = [];
+    mStep = 2;
+
+    lastwarn('');  % Make sure to clear the last warning message
+    warning('off');  % Avoid showing all warnings
+    pd_gmres(A, b, mInitial, mMinMax, mStep);  % Call pd_gmres
+    warning('on');  % Show all warnings again
+    [warnMsg, ~] = lastwarn;  % retrieve warning message
+    assert(matches(warnMsg, "mStep was given but will not be used."))
+
+end
+
+function test_mStep_valid_range()
+% Test valid range of parameter mStep
+
+    A = eye(3);
+    b = ones(3, 1);
+    mInitial = 1;
+    mMinMax = [1; 3];
+    
+    mStepValues = [0, 3, 10];  % these values lie outside the valid range
+    
+    for ii=1:length(mStepValues)
+        try
+            pd_gmres(A, b, mInitial, mMinMax, mStepValues(ii));
+        catch ME
+            msg = "mStep must satisfy: 0 < mStep < n.";
+            assert(matches(ME.message, msg));
+        end
+    end
+
+end
