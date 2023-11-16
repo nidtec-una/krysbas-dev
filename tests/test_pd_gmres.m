@@ -12,50 +12,254 @@ function test_suite = test_pd_gmres %#ok<*STOUT>
 
 end
 
-function test_pd_GMRES_01_poisson() 
-    % Change name (change test?) by boundary conditions 
-    % (Dirichlet, Neumann, Robin, mixed).
-    % Description:
-    % ============
-    % Solve a 1D-Poisson equation at [aStart, aEnd] = [0, 1]
-    % - u''(x) = f(x)
-    % subject to
-    % u(0) = g(0) = 0, u(1) = g(1) = 1;
-    % where
-    % f(x) = 6*x; g(x) = x^3
-    % Discretization results in a linear system Au = b
-    
-    % Source term and boundary values
-    f = @(x) -6*x;
-    g = @(x) x.^3;
-    NODES = 9;
-    INNERNODES = NODES-2;
-    aStart = 0;
-    aEnd = 1;
-    h = ( aEnd - aStart ) / (NODES - 1);
-    
-    % Left-hand side (LHS) matrix 'A'
-    % LHS is composed by the finite-difference coefficients for u''(x)
-    A = 2*eye(INNERNODES) - diag(ones(INNERNODES-1,1), 1) - diag(ones(INNERNODES-1, 1), -1);
-    
-    % Right-hand side 'b' (RHS)
-    % RHS is composed by the contributions from 
-    % the boundary conditions g(x) and the source term f(x).
-    b = h*h*f( linspace(aStart + h, aEnd - h, INNERNODES) )'; % b = h^2*f(x)
-    % Add contribution from Dirichlet nodes to vector 'b'
-    % b(1, 1) = g( astart );
-    b(INNERNODES,1) = b(INNERNODES,1) + g( aEnd );
-    
-    % Exact solution 'uExact'
-    uExact = g( linspace(aStart + h, aEnd - h, INNERNODES) )';
-    
-    % CALL ALGORITHMS: PD_GMRES, ADAPTIVE_GMRES, SWITCH_GMRES, etc.
-    
-    % PD_GMRES
-    tol=1e-9; maxit=100; m0=3;
-    uPD_GMRES= pd_gmres(A, b, m0, tol, maxit);
 
-    % Assert whether the pd_gmres solution match the exact knonw solution
-    assertElementsAlmostEqual(uPD_GMRES, uExact)
+% ----> Test for sanity checks
 
+function test_number_of_input_arguments() 
+% Test if error is raised when passing incorrect number of inputs.  
+    % Error should be raised since 1 parameter is given
+    try
+        pd_gmres(ones(2, 2));
+    catch ME
+        msg = "Too few input parameters. Expected at least A and b.";
+        assert(matches(ME.message, msg))
+    end
+
+    % Error should be raised since 10 parameters are given
+    try 
+        pd_gmres([], [], [], [], [], [], [], [], [], []);
+    catch ME
+        msg = "Too many input parameters.";
+        assert(matches(ME.message, msg))
+    end     
+end
+
+function test_empty_matrix_A()
+% Test if error is raised when an empty matrix A is given.
+    try
+        pd_gmres([], 1);
+    catch ME
+        msg = 'Matrix A cannot be empty.';
+        assert(matches(ME.message, msg))
+    end
+end
+
+function test_non_square_matrix_A()
+% Test if error is raised when matrix A is not squared
+    try
+        pd_gmres([1; 1], [1; 1]);
+    catch ME
+        msg = "Matrix A must be square.";
+        assert(matches(ME.message, msg))
+    end
+end
+
+function test_empty_vector_b()
+% Test if error is raised when vector b is empty
+    try
+        pd_gmres(1, []);
+    catch ME
+        msg = "Vector b cannot be empty.";
+    end
+end
+
+function test_vector_b_not_column_vector()
+% Test if error is raised when vector b is not a column vector
+    try
+        pd_gmres(ones(2), [1, 1]);
+    catch ME
+        msg = "Vector b must be a column vector.";
+    end
+end
+
+function test_size_compatibility_between_A_and_b()
+% Test if error is raised when the dimensionality of A and b differs
+    try
+        pd_gmres(ones(3), [1; 1]);
+    catch ME
+        msg = "Dimension mismatch between matrix A and vector b.";
+    end
+end
+
+function test_mInitial_not_given_empty_or_equal_to_n_use_unrestarted()
+% Test whether the unrestarted version of pd_gmres() is used if mInitial is
+% empty, not given, or equal to the dimension of the linear system n
+
+    % Here, we actually solve a linear system and check whether
+    % 'restarted' is false or not. This is not ideal, but it might be the
+    % only way to construct the test
+
+    A = eye(3);
+    b = ones(3, 1);
+    
+    % Only provide A and b
+    [~, ~, ~, ~, ~, restarted, ~] = pd_gmres(A, b);
+    assert(restarted == false);
+
+    % Pass mInitial empty
+    [~, ~, ~, ~, ~, restarted, ~] = pd_gmres(A, b, []);
+    assert(restarted == false);
+
+    % Pass mInitial = 3
+    [~, ~, ~, ~, ~, restarted, ~] = pd_gmres(A, b, 3);
+    assert(restarted == false);
+
+end
+
+function test_mInitial_given_use_restarted()
+% Test whether the restarted version of pd_gmres() is used if a valid
+% mInitial is provided
+
+    A = eye(3);
+    b = ones(3, 1);
+    [~, ~, ~, ~, ~, restarted, ~] = pd_gmres(A, b, 1);
+    assert(restarted == true)
+
+end
+
+function test_mInitial_valid_range()
+% Test whether the initial restart parameter 'm' lies between (1, n).
+
+    A = eye(4);
+    b = ones(4, 1);
+
+    % Loop over values that lie outside the range
+    mInitialValues = [-50, 0, length(b) + 1, 100];
+    for i=1:length(mInitialValues)
+        try
+            pd_gmres(A, b, mInitialValues(i))
+        catch ME
+            msg = "mInitial must satisfy: 1 <= mInitial <= n.";
+            assert(matches(ME.message, msg))
+        end
+    end
+            
+end
+
+function test_warning_raised_if_mMinMax_given_when_unrestarted()
+% Test whether a warning is raised if mMinMax is given but restarted=false
+
+    % Inputs that will generated the expected warning
+    A = eye(3);
+    b = ones(3, 1);
+    mInitial = [];
+    mMinMax = [1; 2];
+
+    lastwarn('');  % Make sure to clear the last warning message
+    warning('off');  % Avoid showing all warnings
+    pd_gmres(A, b, mInitial, mMinMax);  % Call pd_gmres
+    warning('on');  % Show all warnings again
+    [warnMsg, ~] = lastwarn;  % retrieve warning message
+    assert(matches(warnMsg, "mMinMax was given but will not be used."))
+
+end
+
+function test_mMinMax_valid_range()
+% Test the range of validity of the minimum and maximum values of m
+    
+    A = eye(3);
+    b = ones(3, 1);
+    mInitial = 1;
+
+    mMinMaxValues = cell(3, 1);
+    mMinMaxValues{1} = [0; 1];  % invalid mMin
+    mMinMaxValues{2} = [1; 4];  % invalid mMax
+    mMinMaxValues{3} = [1; 1];  % non-monotonically increasing
+
+    msg = "mMinMax must satisfy: 1 <= mMinMax(1) < mMinMax(2) <= n.";
+    for ii=1:length(mMinMaxValues)
+        try
+            pd_gmres(A, b, mInitial, mMinMaxValues{ii});
+        catch ME
+            assert(matches(ME.message, msg));
+        end
+    end
+
+end
+
+function test_mMinMax_valid_range_wrt_mInitial()
+% Test the validity of mMinMax with respect to mInitial
+
+    A = eye(3);
+    b = ones(3, 1);
+    mInitial = 1;
+    mMinMax = [2; 3];
+
+    try
+        pd_gmres(A, b, mInitial, mMinMax)
+    catch ME
+        msg = 'mMinMax must satisfy: mMinMax(1) <= mInitial <= mMinMax(2).';
+        assert(matches(ME.message, msg));
+    end
+
+end
+
+function test_warning_raised_if_mStep_given_when_unrestarted()
+% Test if a warning is raised when mStep is given but restarted=false
+
+    % Inputs that will generated the expected warning
+    A = eye(3);
+    b = ones(3, 1);
+    mInitial = [];
+    mMinMax = [];
+    mStep = 2;
+
+    lastwarn('');  % Make sure to clear the last warning message
+    warning('off');  % Avoid showing all warnings
+    pd_gmres(A, b, mInitial, mMinMax, mStep);  % Call pd_gmres
+    warning('on');  % Show all warnings again
+    [warnMsg, ~] = lastwarn;  % retrieve warning message
+    assert(matches(warnMsg, "mStep was given but will not be used."))
+
+end
+
+function test_mStep_valid_range()
+% Test valid range of parameter mStep
+
+    A = eye(3);
+    b = ones(3, 1);
+    mInitial = 1;
+    mMinMax = [1; 3];
+    
+    mStepValues = [0, 3, 10];  % these values lie outside the valid range
+    
+    for ii=1:length(mStepValues)
+        try
+            pd_gmres(A, b, mInitial, mMinMax, mStepValues(ii));
+        catch ME
+            msg = "mStep must satisfy: 0 < mStep < n.";
+            assert(matches(ME.message, msg));
+        end
+    end
+
+end
+
+function test_vector_xInitial_not_column_vector()
+% Test if error is raised when xInitial is not a column vector
+    
+    A = eye(3);
+    b = ones(3, 1);
+    x0 = ones(1, 3);
+
+    try
+        pd_gmres(A, b, [], [], [], [], [], x0);
+    catch ME
+        msg = "Initial guess xInitial is not a column vector.";
+        assert(matches(ME.message, msg));
+    end
+end
+
+function test_size_compatibility_between_A_and_xInitial()
+% Test size compatibility between A and xInitial
+
+    A = eye(3);
+    b = ones(3, 1);
+    x0 = ones(2, 1);
+
+    try
+        pd_gmres(A, b, [], [], [], [], [], x0);
+    catch ME
+        msg = "Dimension mismatch between matrix A and initial guess xInitial.";
+        assert(matches(ME.message, msg));
+    end
 end
