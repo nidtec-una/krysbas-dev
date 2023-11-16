@@ -32,9 +32,9 @@ function [x, flag, relres, iter, resvec, restarted, time] = pd_gmres(...
 %
 %   mMinMax:  2-by-1 vector, optional
 %             Minimum and maximum values of the restart paramter m.
-%             Default is [1; n - 1]. Note that  we require 
+%             Default is [1; n]. Note that  we require 
 %             1 <= mMinMax(1) < mMinMax(2) <= n. Note that for large
-%             matrices (e.g., > 600), the default value mMinMax(2) = n -1
+%             matrices (e.g., > 600), the default value mMinMax(2) = n
 %             might result in low convergence. For these cases, following
 %             Ref. [2], we recommend something on the order of [1; 100].
 %
@@ -146,17 +146,19 @@ end
 
 % ----> Default values and sanity checks for mMinMax
 if (nargin < 4) || isempty(mMinMax)
-    mMinMax = [1; n-1];
+    mMinMax = [1; n];
 else
     if ~restarted
         warning("mMinMax was given but will not be used.")
     end
 end
 
-% TODO: Do we want to allow for mMinMax(1) = mMinMax(2)? I guess in that
-% case the PD-rule won't do anything, since m will remain constant. Right?
-if (mMinMax(1) <= 0) || (mMinMax(2) > n) || (mMinMax(2) <= mMinMax(1))
-    error("mMinMax must satisfy: 0 < mMinMax(1) < mMinMax(2) <= n.")
+if (mMinMax(1) < 1) || (mMinMax(2) > n) || (mMinMax(2) <= mMinMax(1))
+    error("mMinMax must satisfy: 1 <= mMinMax(1) < mMinMax(2) <= n.")
+end
+
+if restarted && ((mMinMax(1) > mInitial) || (mMinMax(2) < mInitial))
+    error("mMinMax must satisfy: mMinMax(1) <= mInitial <= mMinMax(2).")
 end
 
 mMin = mMinMax(1);
@@ -171,9 +173,7 @@ else
     end
 end
    
-%TODO: Do we want to allow for mStep = 0? In that case, the m parameter
-% won't change. In other words, we will be doing gmres(mInitial).
-if (mStep <= 0) || (mStep >= n)
+if (mStep < 1) || (mStep > n - 1)
     error("mStep must satisfy: 0 < mStep < n.")
 end
 
