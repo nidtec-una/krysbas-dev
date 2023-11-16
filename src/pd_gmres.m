@@ -194,7 +194,6 @@ elseif tol >= 1
 end
 
 % ----> Default value for maxit
-% TODO: We have to have a closer look at the defualt values for maxit
 if (nargin < 7) || isempty(maxit)
     if restarted
         maxit = min(ceil(n/mInitial), 10);
