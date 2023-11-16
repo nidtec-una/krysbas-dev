@@ -172,7 +172,7 @@ if (nargin < 5) || isempty(mStep)
     mStep = 1;
 else
     if ~restarted
-        warnign("mStep was given but will not be used.")
+        warning("mStep was given but will not be used.");
     end
 end
    
