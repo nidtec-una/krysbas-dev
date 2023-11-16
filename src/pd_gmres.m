@@ -153,7 +153,10 @@ else
     end
 end
 
-if (mMinMax(1) < 1) || (mMinMax(2) > n) || (mMinMax(2) <= mMinMax(1))
+if restarted && ...
+        ((mMinMax(1) < 1) || ...
+         (mMinMax(2) > n) || ...
+         (mMinMax(2) <= mMinMax(1)))
     error("mMinMax must satisfy: 1 <= mMinMax(1) < mMinMax(2) <= n.")
 end
 
