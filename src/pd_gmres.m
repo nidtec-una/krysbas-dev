@@ -35,26 +35,26 @@ function [x, flag, relres, iter, resvec, restarted, time] = pd_gmres(...
 %             Default is [1; n]. Note that  we require 
 %             1 <= mMinMax(1) < mMinMax(2) <= n. Note that for large
 %             matrices (e.g., > 600), the default value mMinMax(2) = n
-%             might result in low convergence. For these cases, following
-%             Ref. [2], we recommend something on the order of [1; 100].
+%             might require large computational resources.
 %
 %   mStep:    int, optional
-%             Step size for incresing the restart parameter m between
-%             cycles. Default is 1 if n <= 10 and 3 otherwise.
+%             Step size for increasing the restart parameter m when
+%             m < mMinMax(1). Default is 1 if n <= 10 and 3 otherwise.
 %
 %   tol:      float, optional
 %             Tolerance error threshold for the relative residual norm.
 %             Default is 1e-6.
 %           
 %   maxit:    int, optional
-%             Maximum number of iterations. 
+%             Maximum number of outer iterations. 
 %
 %   xInitial: n-by-1 vector, optional
 %             Vector of initial guess. Default is zeros(n, 1).
 % 
 %   alphaPD:  2-by-1 vector, optional
 %             Proportional and derivative coefficients from the
-%             proportional-derivative controller. Default is [-3, 5].
+%             proportional-derivative controller. Default is [-3, 5],
+%             following Ref. [2].
 %
 %   Output parameters:
 %   ------------------
