@@ -13,7 +13,7 @@ function test_suite = test_pd_gmres %#ok<*STOUT>
 end
 
 
-% ----> Test sanity checks and default values
+% ----> Test for sanity checks
 
 function test_number_of_input_arguments() 
 % Test if error is raised when passing incorrect number of inputs.  
