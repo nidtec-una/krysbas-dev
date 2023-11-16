@@ -81,7 +81,7 @@ function test_size_compatibility_between_A_and_b()
     end
 end
 
-function test_mInitial_not_given_empty_or_equal_to_n()
+function test_mInitial_not_given_empty_or_equal_to_n_use_unrestarted()
 % Test whether the unrestarted version of pd_gmres() is used if mInitial is
 % empty, not given, or equal to the dimension of the linear system n
 
@@ -106,6 +106,17 @@ function test_mInitial_not_given_empty_or_equal_to_n()
 
 end
 
+function test_mInitial_given_use_restarted()
+% Test whether the restarted version of pd_gmres() is used if a valid
+% mInitial is provided
+
+    A = eye(3);
+    b = ones(3, 1);
+    [~, ~, ~, ~, ~, restarted, ~] = pd_gmres(A, b, 1);
+    assert(restarted == true)
+
+end
+
 function test_mInitial_valid_range()
 % Test whether the initial restart parameter 'm' lies between (1, n).
 
@@ -124,4 +135,21 @@ function test_mInitial_valid_range()
     end
             
 end
+
+function test_warning_raised_if_mMinMax_given_when_unrestarted()
+% Test whether a warning is raised if mMinMax is given but restarted=false
+
+    % Inputs that will generated the expected warning
+    A = eye(3);
+    b = ones(3, 1);
+    mInitial = [];
+    mMinMax = [1; 2];
+
+    lastwarn('');  % Make sure to clear the last warning message
+    pd_gmres(A, b, mInitial, mMinMax);  % Call pd_gmres
+    [warnMsg, ~] = lastwarn;  % retrieve warning message
+    assert(matches(warnMsg, "mMinMax was given but will not be used."))
+
+end
+
 
