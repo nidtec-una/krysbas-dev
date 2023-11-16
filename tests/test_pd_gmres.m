@@ -270,3 +270,32 @@ function test_warning_raised_if_tol_greater_than_1()
 
 end
 
+function test_vector_xInitial_not_column_vector()
+% Test if error is raised when xInitial is not a column vector
+    
+    A = eye(3);
+    b = ones(3, 1);
+    x0 = ones(1, 3);
+
+    try
+        pd_gmres(A, b, [], [], [], [], [], x0);
+    catch ME
+        msg = "Initial guess xInitial is not a column vector.";
+        assert(matches(ME.message, msg));
+    end
+end
+
+function test_size_compatibility_between_A_and_xInitial()
+% Test size compatibility between A and xInitial
+
+    A = eye(3);
+    b = ones(3, 1);
+    x0 = ones(2, 1);
+
+    try
+        pd_gmres(A, b, [], [], [], [], [], x0);
+    catch ME
+        msg = "Dimension mismatch between matrix A and initial guess xInitial.";
+        assert(matches(ME.message, msg));
+    end
+end
