@@ -240,7 +240,7 @@ function test_warning_raised_if_tol_less_than_eps()
     % Inputs that will generated the expected warning
     A = eye(3);
     b = ones(3, 1);
-    tol = eps * 1e-2;
+    tol = 1e-100;
 
     lastwarn('');  % Make sure to clear the last warning message
     warning('off');  % Avoid showing all warnings
@@ -261,9 +261,9 @@ function test_warning_raised_if_tol_greater_than_1()
     tol = 1 + 1e-2;
 
     lastwarn('');  % Make sure to clear the last warning message
-    warning('off');  % Avoid showing all warnings
+    %warning('off');  % Avoid showing all warnings
     pd_gmres(A, b, [], [], [], tol);  % Call pd_gmres
-    warning('on');  % Show all warnings again
+    %warning('on');  % Show all warnings again
     [warnMsg, ~] = lastwarn;  % retrieve warning message
     msg = 'Tolerance is too large and it will be changed to 1-eps.';
     assert(matches(warnMsg, msg))
