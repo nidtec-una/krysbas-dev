@@ -215,7 +215,7 @@ end
 
 % Check whether x0 has the right dimension
 if rowsxInitial ~= n
-    error("Initial guess xInitial does not have the correct dimension.")
+    error("Dimension mismatch between matrix A and initial guess xInitial.")
 end
 
 clear rowsxInitial colsxInitial;
