@@ -240,7 +240,7 @@ function test_warning_raised_if_tol_less_than_eps()
     % Inputs that will generated the expected warning
     A = eye(3);
     b = ones(3, 1);
-    tol = eps - 1e-2;
+    tol = eps * 1e-2;
 
     lastwarn('');  % Make sure to clear the last warning message
     warning('off');  % Avoid showing all warnings
