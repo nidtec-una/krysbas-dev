@@ -299,25 +299,29 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
         v(:, 1) = r / beta;
         h = zeros(m + 1, m);
 
-        % Modified Gram Schmidt-Arnoldi
-        for j = 1:m
-            w(:, j) = A * v(:, j);
-            for i = 1:j
-                h(i, j) = w(:, j)' * v(:, i);
-                w(:, j) = w(:, j) - h(i, j) * v(:, i);
-            end
-            h(j + 1, j) = norm(w(:, j));
-            if h(j + 1, j) == 0
-                m = j;
-                h2 = zeros(m + 1, m); % Comment by JCC: VERIFY!!! (why?)
-                for k = 1:m
-                    h2(:, k) = h(:, k);
-                end
-                h = h2;
-            else
-                v(:, j + 1) = w(:, j) / h(j + 1, j);
-            end
-        end
+        % % Modified Gram Schmidt-Arnoldi
+        % for j = 1:m
+        %     w(:, j) = A * v(:, j);
+        %     for i = 1:j
+        %         h(i, j) = w(:, j)' * v(:, i);
+        %         w(:, j) = w(:, j) - h(i, j) * v(:, i);
+        %     end
+        %     h(j + 1, j) = norm(w(:, j));
+        %     if h(j + 1, j) == 0
+        %         m = j;
+        %         h2 = zeros(m + 1, m); % Comment by JCC: VERIFY!!! (why?)
+        %         for k = 1:m
+        %             h2(:, k) = h(:, k);
+        %         end
+        %         h = h2;
+        %     else
+        %         v(:, j + 1) = w(:, j) / h(j + 1, j);
+        %     end
+        % end
+
+        [h, v, ~] = modified_gram_schmidt_arnoldi(A, v, m);
+
+
         g = zeros(m + 1, 1);
         g(1, 1) = beta;
 
