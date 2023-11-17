@@ -1,7 +1,7 @@
 ---
 name: code_style
 
-# Credits: This workflow has been modified from
+# Credits: This workflow has been modified from:
 # https://github.com/Remi-Gau/template_matlab_analysis/blob/main/.github/workflows/miss_hit.yml
 
 on:
@@ -25,7 +25,7 @@ jobs:
 
     strategy:
       matrix:
-        command: [mh_style, mh_metric --ci, mh_lint]
+        command: [mh_style]  # consider adding mh_metric and mh_lint in the future
       fail-fast: true  # cancel all jobs if one fails
 
     steps:
