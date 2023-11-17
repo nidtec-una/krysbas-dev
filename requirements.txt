@@ -1,0 +1,20 @@
+# ------------------------------------------------------------------------------- #
+# This file was modified from:                                                    #
+# https://github.com/Remi-Gau/template_matlab_analysis/blob/main/requirements.txt #
+# under GPLv3                                                                     #
+# ------------------------------------------------------------------------------- #
+
+# Code style
+miss_hit
+# pre-commit
+
+# Documentation
+# Sphinx
+# sphinxcontrib-matlabdomain
+# sphinx_rtd_theme
+# sphinx-copybutton
+# myst-parser
+
+# Notebooks
+# octave_kernel
+# jupyterlab
