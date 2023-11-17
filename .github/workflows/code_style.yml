@@ -25,7 +25,7 @@ jobs:
 
     strategy:
       matrix:
-        command: [mh_style, mh_metric --ci && mh_lint]
+        command: [mh_style, mh_metric --ci, mh_lint]
       fail-fast: true  # cancel all jobs if one fails
 
     steps:
