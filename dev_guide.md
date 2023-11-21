@@ -5,7 +5,7 @@ This documents aims at providing a simple guide to work, develop, and condtribut
 - [Create your conda environment](#create-your-conda-environment)
 - [Installing required packages](#installing-required-packages)
 - [Testing locally with MOxUnit](#testing-locally-with-moxunit)
-- [Tagging your commits](#taggin-your-commits)
+- [Tagging your commits](#tagging-your-commits)
 - [Opening a pull request](#opening-a-pull-request)
 
 ## Create your conda environment
