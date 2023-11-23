@@ -292,35 +292,12 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
         end
 
         mIteration(iter(size(iter, 1), :) + 1, 1) = m;
-        v = zeros(n, m + 1);
-        w = zeros(n, m);
         r = b - A * xInitial;
         beta = norm(r);
-        v(:, 1) = r / beta;
-        h = zeros(m + 1, m);
+        v1 = r / beta;
 
-        % % Modified Gram Schmidt-Arnoldi
-        % for j = 1:m
-        %     w(:, j) = A * v(:, j);
-        %     for i = 1:j
-        %         h(i, j) = w(:, j)' * v(:, i);
-        %         w(:, j) = w(:, j) - h(i, j) * v(:, i);
-        %     end
-        %     h(j + 1, j) = norm(w(:, j));
-        %     if h(j + 1, j) == 0
-        %         m = j;
-        %         h2 = zeros(m + 1, m); % Comment by JCC: VERIFY!!! (why?)
-        %         for k = 1:m
-        %             h2(:, k) = h(:, k);
-        %         end
-        %         h = h2;
-        %     else
-        %         v(:, j + 1) = w(:, j) / h(j + 1, j);
-        %     end
-        % end
-
-        [h, v, ~] = modified_gram_schmidt_arnoldi(A, v, m);
-
+        % Apply modified Gram-Schmidt Arnoldi
+        [H, V] = modified_gram_schmidt_arnoldi(A, v1, m);
 
         g = zeros(m + 1, 1);
         g(1, 1) = beta;
@@ -328,30 +305,28 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
         % Plane rotations (QR decompostion)
         for j = 1:m
             P = eye(m + 1);
-            sin = h(j + 1, j) / (sqrt(h(j + 1, j)^2 + h(j, j)^2));
-            cos = h(j, j) / (sqrt(h(j + 1, j)^2 + h(j, j)^2));
+            sin = H(j + 1, j) / (sqrt(H(j + 1, j)^2 + H(j, j)^2));
+            cos = H(j, j) / (sqrt(H(j + 1, j)^2 + H(j, j)^2));
             P(j, j) = cos;
             P(j + 1, j + 1) = cos;
             P(j, j + 1) = sin;
             P(j + 1, j) = -sin;
-            h = P * h;
+            H = P * H;
             g = P * g;
         end
 
         R = zeros(m, m);
         G = zeros(m, 1);
-        V = zeros(n, m);
 
         for k = 1:m
             G(k) = g(k);
-            V(:, k) = v(:, k);
             for i = 1:m
-                R(k, i) = h(k, i);
+                R(k, i) = H(k, i);
             end
         end
 
         minimizer = R \ G;
-        xm = xInitial + V * minimizer;
+        xm = xInitial + V(1:n, 1:m) * minimizer;
         res(restart + 1, :) = abs(g(m + 1, 1));
         iter(restart + 1, :) = restart + 1;
         resvec(size(resvec, 1) + 1, :) = abs(g(m + 1, 1) / res(1, 1));
