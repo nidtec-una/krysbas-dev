@@ -292,7 +292,7 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
         end
 
         mIteration(iter(size(iter, 1), :) + 1, 1) = m;
-        
+
         % Compute normalized residual vector
         r = b - A * xInitial;
         beta = norm(r);
