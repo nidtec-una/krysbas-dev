@@ -1,15 +1,16 @@
-function [H, v, W] = modified_gram_schmidt_arnoldi(A, v, m)
+function [H, V] = modified_gram_schmidt_arnoldi(A, v1, m)
     % Modified Gram-Schmidt Arnoldi iteration
     %
     %   Description:
     %   ------------
     %
-    %   TODO: Add a brief description...
+    %   Implementation of the modified Gram-Schmidt Arnoldi iteration
+    %   following [1], Algorithm 6.2.
     %
     %   Syntaxis:
     %   ---------
     %
-    %   [H, W] = modified_gram_schmidt_arnoldi(A, v, m)
+    %   [H, V] = modified_gram_schmidt_arnoldi(A, v1, m)
     %
     %   Input parameters:
     %   -----------------
@@ -17,7 +18,7 @@ function [H, v, W] = modified_gram_schmidt_arnoldi(A, v, m)
     %   A:  n-by-n matrix
     %       Matrix of coefficients.
     %
-    %   v:  n-by-1 vector
+    %   v1: n-by-1 vector
     %       Normalized residual vector.
     %
     %   m:  int
@@ -26,14 +27,18 @@ function [H, v, W] = modified_gram_schmidt_arnoldi(A, v, m)
     %   Output parameters:
     %   ------------------
     %
-    %   H:  size?
+    %   H:  m+1-by-m matrix
     %       Upper Hessenberg matrix
     %
-    %   W:  size?
+    %   V:  n-by-m matrix
     %       Orthonormal basis of Krylov subspace
     %
-    %   v:  n-b1-1 vector
-    %       Updated normalized residual vector.
+    %   References:
+    %   -----------
+    %
+    %   [1] Saad, Y. (2003). Iterative methods for sparse linear systems.
+    %   Society for Industrial and Applied Mathematics.
+    %
     %
     %   Copyright:
     %   ----------
@@ -56,27 +61,36 @@ function [H, v, W] = modified_gram_schmidt_arnoldi(A, v, m)
     %   with this file.  If not, see <http://www.gnu.org/licenses/>.
     %
 
+    % Initialize H and W
+    [n, ~] = size(A);
+    H = zeros(m+1, m);
+    W = zeros(n, m);
+    
+    % Construct V matrix
+    V = zeros(n, m + 1);
+    V(:, 1) = v1;
+
     % Modified Gram Schmidt-Arnoldi
     for j = 1:m
-        w(:, j) = A * v(:, j);
+        W(:, j) = A * V(:, j);
         for i = 1:j
-            h(i, j) = w(:, j)' * v(:, i);
-            w(:, j) = w(:, j) - h(i, j) * v(:, i);
+            H(i, j) = W(:, j)' * V(:, i);
+            W(:, j) = W(:, j) - H(i, j) * V(:, i);
         end
-        h(j + 1, j) = norm(w(:, j));
-        if h(j + 1, j) == 0
+        H(j + 1, j) = norm(W(:, j));
+        
+        if H(j + 1, j) == 0
+            % We have reached convergence. No need to continue.
             m = j;
-            h2 = zeros(m + 1, m); % Comment by JCC: VERIFY!!! (why?)
-            for k = 1:m
-                h2(:, k) = h(:, k);
-            end
-            h = h2;
+            H = H(1:m + 1, 1:m);
+            V = V(:, 1:m);
+            return
         else
-            v(:, j + 1) = w(:, j) / h(j + 1, j);
+            V(:, j + 1) = W(:, j) / H(j + 1, j);
         end
+    
     end
 
-    H = h;
-    W = w;
-
+    % Slice matrix V since we are only interested in the first 'm' columns
+    V = V(1:n, 1:m);
 end
