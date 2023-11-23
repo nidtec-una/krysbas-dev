@@ -1,4 +1,4 @@
-function [H, V] = modified_gram_schmidt_arnoldi(A, v1, m)
+function [H, V] = modified_gram_schmidt_arnoldi(A, v, m)
     % Modified Gram-Schmidt Arnoldi iteration
     %
     %   Description:
@@ -10,7 +10,7 @@ function [H, V] = modified_gram_schmidt_arnoldi(A, v1, m)
     %   Syntaxis:
     %   ---------
     %
-    %   [H, V] = modified_gram_schmidt_arnoldi(A, v1, m)
+    %   [H, V] = modified_gram_schmidt_arnoldi(A, v, m)
     %
     %   Input parameters:
     %   -----------------
@@ -18,7 +18,7 @@ function [H, V] = modified_gram_schmidt_arnoldi(A, v1, m)
     %   A:  n-by-n matrix
     %       Matrix of coefficients.
     %
-    %   v1: n-by-1 vector
+    %   v:  n-by-1 vector
     %       Normalized residual vector.
     %
     %   m:  int
@@ -61,14 +61,14 @@ function [H, V] = modified_gram_schmidt_arnoldi(A, v1, m)
     %   with this file.  If not, see <http://www.gnu.org/licenses/>.
     %
 
-    % Initialize H and W
+    % Initialize matrices H and W
     [n, ~] = size(A);
-    H = zeros(m+1, m);
-    W = zeros(n, m);
-    
-    % Construct V matrix
+    H = zeros(m + 1, m);
+    W = zeros(n, m);  %  W is only used internally by the algorithm
+
+    % Construct the V matrix
     V = zeros(n, m + 1);
-    V(:, 1) = v1;
+    V(:, 1) = v;  % this would be v1 if one follows Ref. [1].
 
     % Modified Gram Schmidt-Arnoldi
     for j = 1:m
@@ -78,17 +78,18 @@ function [H, V] = modified_gram_schmidt_arnoldi(A, v1, m)
             W(:, j) = W(:, j) - H(i, j) * V(:, i);
         end
         H(j + 1, j) = norm(W(:, j));
-        
+
         if H(j + 1, j) == 0
             % We have reached convergence. No need to continue.
             m = j;
+            % Slice matrices and return outputs.
             H = H(1:m + 1, 1:m);
             V = V(:, 1:m);
             return
         else
             V(:, j + 1) = W(:, j) / H(j + 1, j);
         end
-    
+
     end
 
     % Slice matrix V since we are only interested in the first 'm' columns
