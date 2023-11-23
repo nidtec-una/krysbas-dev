@@ -292,11 +292,13 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
         end
 
         mIteration(iter(size(iter, 1), :) + 1, 1) = m;
+        
+        % Compute normalized residual vector
         r = b - A * xInitial;
         beta = norm(r);
         v1 = r / beta;
 
-        % Apply modified Gram-Schmidt Arnoldi
+        % Modifed Gram-Schmidt Arnoldi iteration
         [H, V] = modified_gram_schmidt_arnoldi(A, v1, m);
 
         g = zeros(m + 1, 1);
