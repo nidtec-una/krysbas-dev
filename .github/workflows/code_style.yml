@@ -1,0 +1,49 @@
+---
+name: code_style
+
+# Credits: This workflow has been modified from:
+# https://github.com/Remi-Gau/template_matlab_analysis/blob/main/.github/workflows/miss_hit.yml
+
+on:
+  push:
+    branches:
+    - main
+    - dev
+    paths:
+    - '**.m'
+    - .github/workflows/code_style.yml
+  pull_request:
+    branches: ['*']
+    paths:
+    - '**.m'
+    - .github/workflows/code_style.yml
+jobs:
+
+  miss_hit:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        command: [mh_style]  # consider adding mh_metric and mh_lint in the future
+      fail-fast: true  # cancel all jobs if one fails
+
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools
+        pip3 install -r requirements.txt
+
+    - name: ${{ matrix.command }}
+      run: |
+        ${{ matrix.command }}
