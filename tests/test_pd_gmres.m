@@ -283,3 +283,43 @@ function test_size_compatibility_between_A_and_xInitial()
         assert(matches(ME.message, msg));
     end
 end
+
+function test_outputs_unrestarted_identity_matrix()
+    % Test whether the correct outputs are returned using an identity
+    % matrix and righ-hand-side of b's
+
+    A = eye(3);
+    b = ones(3, 1);
+    
+    % Return only solution
+    x = pd_gmres(A, b);
+    assertEqual(x, ones(3, 1));
+
+    % Return solution and convergence flag
+    [x, flag] = pd_gmres(A, b);
+    assertEqual(x, ones(3, 1));
+    assert(flag == 1)
+
+    % Return solution, convergence flag, and last relative residual
+    [x, flag, relres] = pd_gmres(A, b);
+    assertEqual(x, ones(3, 1));
+    assert(flag == 1)
+    assertEqual(relres, 0)
+
+    % Return solution, convergence flag, last relative residual, and number
+    % of iterations
+    [x, flag, relres, iter] = pd_gmres(A, b);
+    assertEqual(x, ones(3, 1));
+    assert(flag == 1)
+    assertEqual(relres, 0)
+    assertEqual(iter, [1, 1])  % do we export the number of iterations per cycle as well?
+
+    % % 
+    % [x, flag, relres, iter, resvec] = pd_gmres(A, b);
+    % assertEqual(x, ones(3, 1));
+    % assert(flag == 1)
+    % assertEqual(relres, 0)
+    % assertEqual(iter, [1, 1])
+
+
+end
