@@ -259,12 +259,26 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
     % residuals).
     if ~restarted
         tic();
+        
+        % Calll MATLAB bult-in gmres
         [x, flag, relres, iter, resvec] = ...
             gmres(A, b, [], tol, maxit, [], [], xInitial);
+        
+        % gmres uses a flag system. We only care wheter the solution has
+        % converged or not
+        if flag == 0
+            flag = 1;
+        else
+            flag = 0;
+        end
+
+        % gmres saves the full history of residual vectors. We only save
+        % the last one (per cycle).
         resvec = [resvec(1); resvec(end)];
+        
         time = toc();
         return
-    end
+   end
 
     % Restarted version of PD-GMRES
 
