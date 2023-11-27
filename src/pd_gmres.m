@@ -328,7 +328,7 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
         end
 
         minimizer = R \ G;
-        xm = xInitial + V(1:n, 1:m) * minimizer;
+        xm = xInitial + V * minimizer;
         res(restart + 1, :) = abs(g(m + 1, 1));
         iter(restart + 1, :) = restart + 1;
         resvec(size(resvec, 1) + 1, :) = abs(g(m + 1, 1) / res(1, 1));
