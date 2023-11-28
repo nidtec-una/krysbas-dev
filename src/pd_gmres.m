@@ -1,4 +1,4 @@
-function [x, flag, relres, iter, resvec, restarted, time] = ...
+function [x, flag, relres, resvec, mvec, time] = ...
     pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD, ...
              varargin)
     % PD-GMRES Proportional-Derivative GMRES(m)
@@ -12,7 +12,7 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relres, iter, resvec, restarted, time] = pd_gmres(A, b, ...
+    %   [x, flag, relres, iter, resvec, mvec, time] = pd_gmres(A, b, ...
     %       mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD)
     %
     %
@@ -63,11 +63,18 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
     %             Approximate solution of the linear system.
     %
     %   flag:     boolean
-    %             1 if the algorithm converged, 0 otherwise.
+    %             1 if the algorithm has converged, 0 otherwise.
     %
+    %   relres:   scalar
+    %             Last relative residual norm.
+    %   
+    %   resvec:   (1 up to maxit)-by-1 vector
+    %             Vector of relative residual norms.
+    %             
+    %   mvec:     (1 up to maxit)-by-1 vector
+    %             Vector of restart parameter values. In case the
+    %             unrestarted algorithm is invoked, mvec = NaN.
     %
-    %   log_res:  (1 up to to max_iter)-by-1 vector
-    %             relative residual norms
     %
     %   References:
     %   -----------
@@ -153,9 +160,9 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
     %   (2) If mInitial equals the dimension of A i.e., mInitial = n.
     %   (3) If an empty matrix is given as mInitial, i.e., mInitial = [].
     if (nargin < 3) || isempty(mInitial) || (mInitial == n)
-        restarted = false;  % use unrestarted pd_gmres()
+        restarted = false;
     else
-        restarted = true;  % use restarted pd_gmres()
+        restarted = true;
     end
 
     % If the restarted version of pd_gmres will be used, then the value of
@@ -261,7 +268,7 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
         tic();
         
         % Calll MATLAB bult-in gmres
-        [x, flag, relres, iter, resvec] = ...
+        [x, flag, relres, ~, resvec] = ...
             gmres(A, b, [], tol, maxit, [], [], xInitial);
         
         % gmres uses a flag system. We only care wheter the solution has
@@ -276,6 +283,9 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
         % the last one (per cycle).
         resvec = [resvec(1); resvec(end)];
         
+        % The vector of restart parameters is not used, return NaN
+        mvec = NaN;
+
         time = toc();
         return
    end
@@ -289,7 +299,7 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
     res(1, :) = norm(r0);
     resvec(1, :) = (norm(r0) / res(1, 1));
     iter(1, :) = restart;
-    mIteration(1, 1) = mInitial;
+    mvec(1, 1) = mInitial;
 
     tic();  % start measuring CPU time
 
@@ -305,7 +315,7 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
             m = mInitial;
         end
 
-        mIteration(iter(size(iter, 1), :) + 1, 1) = m;
+        mvec(iter(size(iter, 1), :) + 1, 1) = m;
 
         % Compute normalized residual vector
         r = b - A * xInitial;
