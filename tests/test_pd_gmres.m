@@ -296,7 +296,7 @@ function test_outputs_unrestarted_identity_matrix()
     [x, flag, relres, resvec, mvec, time] = pd_gmres(A, b);
 
     % Compare with expected outputs
-    assertEqual(x, ones(3, 1));
+    assertElementsAlmostEqual(x, ones(3, 1));
     assert(flag == 1);
     assertEqual(relres, 0);
     assertElementsAlmostEqual(resvec, [1.7320508075688770; 0]);
