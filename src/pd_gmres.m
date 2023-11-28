@@ -67,10 +67,10 @@ function [x, flag, relres, resvec, mvec, time] = ...
     %
     %   relres:   scalar
     %             Last relative residual norm.
-    %   
+    %
     %   resvec:   (1 up to maxit)-by-1 vector
     %             Vector of relative residual norms.
-    %             
+    %
     %   mvec:     (1 up to maxit)-by-1 vector
     %             Vector of restart parameter values. In case the
     %             unrestarted algorithm is invoked, mvec = NaN.
@@ -266,11 +266,11 @@ function [x, flag, relres, resvec, mvec, time] = ...
     % residuals).
     if ~restarted
         tic();
-        
+
         % Calll MATLAB bult-in gmres
         [x, flag, relres, ~, resvec] = ...
             gmres(A, b, [], tol, maxit, [], [], xInitial);
-        
+
         % gmres uses a flag system. We only care wheter the solution has
         % converged or not
         if flag == 0
@@ -282,13 +282,13 @@ function [x, flag, relres, resvec, mvec, time] = ...
         % gmres saves the full history of residual vectors. We only save
         % the last one (per cycle).
         resvec = [resvec(1); resvec(end)];
-        
+
         % The vector of restart parameters is not used, return NaN
         mvec = NaN;
 
         time = toc();
         return
-   end
+    end
 
     % Restarted version of PD-GMRES
 

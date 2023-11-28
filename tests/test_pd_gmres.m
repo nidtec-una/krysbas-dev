@@ -291,17 +291,17 @@ function test_outputs_unrestarted_identity_matrix()
     % Setup a trivial linear system
     A = eye(3);
     b = ones(3, 1);
-    
-    % Call function                                             
+
+    % Call function
     [x, flag, relres, resvec, mvec, time] = pd_gmres(A, b);
-   
+
     % Compare with expected outputs
     assertEqual(x, ones(3, 1));
-    assert(flag == 1)
-    assertEqual(relres, 0)
-    assertElementsAlmostEqual(resvec, [1.7320508075688770; 0])
-    assert(isnan(mvec))
-    assert(time > 0 && time < 5) 
+    assert(flag == 1);
+    assertEqual(relres, 0);
+    assertElementsAlmostEqual(resvec, [1.7320508075688770; 0]);
+    assert(isnan(mvec));
+    assert(time > 0 && time < 5);
 end
 
 function test_outputs_restarted_identity_matrix()
@@ -317,17 +317,17 @@ function test_outputs_restarted_identity_matrix()
     maxit = 10;
     xInitial = zeros(3, 1);
     alphaPD = [-3; 5];
-       
+
     % Call function
     [x, flag, relres, resvec, mvec, time] = ...
         pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [2; 3; 4]);
-    assert(flag == 1)
-    assert(relres <= tol)
-    assertElementsAlmostEqual(resvec, [1; 0])
-    assertEqual(mvec, [1; 1])
-    assert(time > 0 && time < 5) 
+    assert(flag == 1);
+    assert(relres <= tol);
+    assertElementsAlmostEqual(resvec, [1; 0]);
+    assertEqual(mvec, [1; 1]);
+    assert(time > 0 && time < 5);
 
 end
