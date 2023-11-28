@@ -25,8 +25,7 @@ function miter = pd_rule(m, minitial, mmin, ...
     %   with this file.  If not, see <http://www.gnu.org/licenses/>.
     %
 
-    ap = 0;
-    ad = 0;
+
 
     if iter > 3
 
@@ -37,15 +36,11 @@ function miter = pd_rule(m, minitial, mmin, ...
                                (2 * res(iter - 1, :)) ...
                               ) ...
                      );
-        % mj= m + round(alpha*(res(iter,:)/res(iter-1,:)) + delta ...
-        % * ((res(iter,:) - res(iter-2,:))/(2*res(iter-1,:))));
 
-        ap = res(iter, :) / res(iter - 1, :);
-        ad = (res(iter, :) - res(iter - 2, :)) / (2 * res(iter - 1, :));
 
     elseif iter > 2
         mj = m + ceil(alpha * (res(iter, :) / res(iter - 1, :)));
-        %    mj= m + round(alpha*(res(iter,:)/res(iter-1,:)));
+        
 
     else
         mj = minitial;
@@ -72,4 +67,4 @@ function miter = pd_rule(m, minitial, mmin, ...
     end
 
     miter = [mj minitial];
-    miter = [mj minitial ap ad];
+    
