@@ -298,7 +298,7 @@ function test_outputs_unrestarted_identity_matrix()
     % Compare with expected outputs
     assertElementsAlmostEqual(x, ones(3, 1));
     assert(flag == 1);
-    assertEqual(relres, 0);
+    assertElementsAlmostEqual(relres, 0);
     assertElementsAlmostEqual(resvec, [1.7320508075688770; 0]);
     assert(isnan(mvec));
     assert(time > 0 && time < 5);
