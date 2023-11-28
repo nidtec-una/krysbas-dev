@@ -99,7 +99,7 @@ Before opening, we kindly ask you to check whether all tests pass and that there
 
 1. From inside MATLAB, go to the `tests` folder and write in the command window
 ```
-run_moxunit_tests
+moxunit_runtests
 ```
 This command will run the complete test suite and will let you know whether all tests are succesfull or not.
 
