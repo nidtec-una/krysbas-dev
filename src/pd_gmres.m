@@ -68,7 +68,7 @@ function [x, flag, relresvec, mvec, time] = ...
     %               1 if the algorithm has converged, 0 otherwise.
     %
     %   relressvec: (1 up to maxit)-by-1 vector
-    %               Vector of relative residual norms. The last relative
+    %               Vector of relative residual norms of every outer iteration (cycles). The last relative
     %               residual norm is simply given by relresvec(end).
     %
     %   mvec:       (1 up to maxit)-by-1 vector
