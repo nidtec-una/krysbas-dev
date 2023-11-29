@@ -329,3 +329,27 @@ function test_outputs_restarted_identity_matrix()
     assert(time > 0 && time < 5);
 
 end
+
+function test_embree3()
+    % Test Embree's 3x3 linear system from https://www.jstor.org/stable/25054403
+    % with PD-GMRES
+
+    % Load A and b
+    load '../data/embree3.mat' Problem
+    A = Problem.A;
+    b = Problem.b;
+
+    % Setup PD-GMRES
+    mInitial = 1;
+    mMinMax = [1; 3];
+    mStep = 1;
+    tol = 1e-9;
+    maxit = 20;
+    xInitial = [0; 0; 0];
+    alphaPD = [-3; 5];
+
+    [x, flag, relresvec, mvec, ~] = ...
+        pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD);
+
+    disp('Done!');
+end
