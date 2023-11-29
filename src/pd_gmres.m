@@ -1,4 +1,4 @@
-function [x, flag, relres, iter, resvec, restarted, time] = ...
+function [x, flag, relresvec, mvec, time] = ...
     pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD, ...
              varargin)
     % PD-GMRES Proportional-Derivative GMRES(m)
@@ -12,62 +12,72 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relres, iter, resvec, restarted, time] = pd_gmres(A, b, ...
+    %   [x, flag, relresvec, mvec, time] = pd_gmres(A, b, ...
     %       mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD)
     %
     %
     %   Input Parameters:
     %   -----------------
     %
-    %   A:        n-by-n matrix
-    %             Left-hand side of the linear system Ax = b.
+    %   A:          n-by-n matrix
+    %               Left-hand side of the linear system Ax = b.
     %
-    %   b:        n-by-1 vector
-    %             Right-hand side of the linear system Ax = b.
+    %   b:          n-by-1 vector
+    %               Right-hand side of the linear system Ax = b.
     %
-    %   mInitial: int, optional
-    %             Initial restart parameter (similar to 'restart' in MATLAB). If
-    %             empty, not given, or equal to n, then mInitial is not used and
-    %             the full unrestarted gmres algorithm with maxit = min(n, 10)
-    %             is employed. Note that we require 1 <= mInitial <= n.
+    %   mInitial:   int, optional
+    %               Initial restart parameter (similar to 'restart' in MATLAB).
+    %               If empty, not given, or equal to n, then mInitial is not
+    %               used and the full unrestarted gmres algorithm with
+    %               maxit = min(n, 10) is employed. Note that we require
+    %               1 <= mInitial <= n.
     %
-    %   mMinMax:  2-by-1 vector, optional
-    %             Minimum and maximum values of the restart paramter m. Default
-    %             is [1; n]. We require 1 <= mMinMax(1) < mMinMax(2) <= n. Note
-    %             that for large matrices (e.g., > 600), the default value
-    %             mMinMax(2) = n might require large computational resources.
+    %   mMinMax:    2-by-1 vector, optional
+    %               Minimum and maximum values of the restart paramter m.
+    %               Default is [1; n]. We require
+    %               1 <= mMinMax(1) < mMinMax(2) <= n. Note that for large
+    %               matrices (e.g., > 600), the default value mMinMax(2) = n
+    %               might require large computational resources.
     %
-    %   mStep:    int, optional
-    %             Step size for increasing the restart parameter m when
-    %             m < mMinMax(1). Default is 1 if n <= 10 and 3 otherwise.
+    %   mStep:      int, optional
+    %               Step size for increasing the restart parameter m when
+    %               m < mMinMax(1). Default is 1 if n <= 10 and 3 otherwise.
     %
-    %   tol:      float, optional
-    %             Tolerance error threshold for the relative residual norm.
-    %             Default is 1e-6.
+    %   tol:        float, optional
+    %               Tolerance error threshold for the relative residual norm.
+    %               Default is 1e-6.
     %
-    %   maxit:    int, optional
-    %             Maximum number of outer iterations.
+    %   maxit:      int, optional
+    %               Maximum number of outer iterations.
     %
-    %   xInitial: n-by-1 vector, optional
-    %             Vector of initial guess. Default is zeros(n, 1).
+    %   xInitial:   n-by-1 vector, optional
+    %               Vector of initial guess. Default is zeros(n, 1).
     %
-    %   alphaPD:  2-by-1 vector, optional
-    %             Proportional and derivative coefficients from the
-    %             proportional-derivative controller. Default is [-3, 5],
-    %             following Ref. [2].
+    %   alphaPD:    2-by-1 vector, optional
+    %               Proportional and derivative coefficients from the
+    %               proportional-derivative controller. Default is [-3, 5],
+    %               following Ref. [2].
     %
     %   Output parameters:
     %   ------------------
     %
-    %   x:        n-by-1 vector
-    %             Approximate solution of the linear system.
+    %   x:          n-by-1 vector
+    %               Approximate solution of the linear system.
     %
-    %   flag:     boolean
-    %             1 if the algorithm converged, 0 otherwise.
+    %   flag:       boolean
+    %               1 if the algorithm has converged, 0 otherwise.
     %
+    %   relressvec: (1 up to maxit)-by-1 vector
+    %               Vector of relative residual norms of every outer iteration
+    %               (cycles). The last relative residual norm is simply given
+    %               by relresvec(end).
     %
-    %   log_res:  (1 up to to max_iter)-by-1 vector
-    %             relative residual norms
+    %   mvec:       (1 up to maxit)-by-1 vector
+    %               Vector of restart parameter values. In case the
+    %               unrestarted algorithm is invoked, mvec = NaN.
+    %
+    %   time:       scalar
+    %               Computational time in seconds.
     %
     %   References:
     %   -----------
@@ -153,9 +163,9 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
     %   (2) If mInitial equals the dimension of A i.e., mInitial = n.
     %   (3) If an empty matrix is given as mInitial, i.e., mInitial = [].
     if (nargin < 3) || isempty(mInitial) || (mInitial == n)
-        restarted = false;  % use unrestarted pd_gmres()
+        restarted = false;
     else
-        restarted = true;  % use restarted pd_gmres()
+        restarted = true;
     end
 
     % If the restarted version of pd_gmres will be used, then the value of
@@ -259,9 +269,28 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
     % residuals).
     if ~restarted
         tic();
-        [x, flag, relres, iter, resvec] = ...
+
+        % Calll MATLAB bult-in gmres
+        [x, flag, relres, ~, resvec] = ...
             gmres(A, b, [], tol, maxit, [], [], xInitial);
-        resvec = [resvec(1); resvec(end)];
+
+        % gmres uses a flag system. We only care wheter the solution has
+        % converged or not
+        if flag == 0
+            flag = 1;
+        else
+            flag = 0;
+        end
+
+        % gmres saves the full history of residual vectors norm of every
+        % iteration of gmres or gmres(m) (inner iterationes). We only save
+        % the last one (per cycle). Note that we also return the normalized
+        % residual vector.
+        relresvec = [resvec(1); resvec(end)] ./ resvec(1);
+
+        % The vector of restart parameters is not used, return NaN
+        mvec = NaN;
+
         time = toc();
         return
     end
@@ -273,9 +302,9 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
     restart = 1;
     r0 = b - A * xInitial;
     res(1, :) = norm(r0);
-    resvec(1, :) = (norm(r0) / res(1, 1));
+    relresvec(1, :) = (norm(r0) / res(1, 1));
     iter(1, :) = restart;
-    mIteration(1, 1) = mInitial;
+    mvec(1, 1) = mInitial;
 
     tic();  % start measuring CPU time
 
@@ -291,7 +320,7 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
             m = mInitial;
         end
 
-        mIteration(iter(size(iter, 1), :) + 1, 1) = m;
+        mvec(iter(size(iter, 1), :) + 1, 1) = m;
 
         % Compute normalized residual vector
         r = b - A * xInitial;
@@ -331,17 +360,15 @@ function [x, flag, relres, iter, resvec, restarted, time] = ...
         xm = xInitial + V * minimizer;
         res(restart + 1, :) = abs(g(m + 1, 1));
         iter(restart + 1, :) = restart + 1;
-        resvec(size(resvec, 1) + 1, :) = abs(g(m + 1, 1) / res(1, 1));
+        relresvec(size(relresvec, 1) + 1, :) = abs(g(m + 1, 1) / res(1, 1));
         % Use last component of g as residual
-        if abs(g(m + 1, 1)) / res(1, 1) < tol || size(resvec, 1) == maxit
+        if abs(g(m + 1, 1)) / res(1, 1) < tol || size(relresvec, 1) == maxit
             flag = 1;  % solution has converged
             x = xm;  % solution vector
         else
             xInitial = xm;  % update and restart
             restart = restart + 1;
         end
-        % Compute the relative residual
-        relres = norm(b - A * xm) / norm(b);
     end
 
     time = toc();  % record CPU time

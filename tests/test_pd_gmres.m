@@ -113,16 +113,16 @@ function test_mInitial_not_given_empty_or_equal_to_n_use_unrestarted()
     b = ones(3, 1);
 
     % Only provide A and b
-    [~, ~, ~, ~, ~, restarted, ~] = pd_gmres(A, b);
-    assert(restarted == false);
+    [~, ~, ~, mvec, ~] = pd_gmres(A, b);
+    assert(isnan(mvec));
 
     % Pass mInitial empty
-    [~, ~, ~, ~, ~, restarted, ~] = pd_gmres(A, b, []);
-    assert(restarted == false);
+    [~, ~, ~, mvec, ~] = pd_gmres(A, b, []);
+    assert(isnan(mvec));
 
     % Pass mInitial = 3
-    [~, ~, ~, ~, ~, restarted, ~] = pd_gmres(A, b, 3);
-    assert(restarted == false);
+    [~, ~, ~, mvec, ~] = pd_gmres(A, b, 3);
+    assert(isnan(mvec));
 
 end
 
@@ -132,8 +132,8 @@ function test_mInitial_given_use_restarted()
 
     A = eye(3);
     b = ones(3, 1);
-    [~, ~, ~, ~, ~, restarted, ~] = pd_gmres(A, b, 1);
-    assert(restarted == true);
+    [~, ~, ~, mvec, ~] = pd_gmres(A, b, 1);
+    assert(~all(isnan(mvec)));
 
 end
 
@@ -282,4 +282,50 @@ function test_size_compatibility_between_A_and_xInitial()
         msg = "Dimension mismatch between matrix A and initial guess xInitial.";
         assert(matches(ME.message, msg));
     end
+end
+
+function test_outputs_unrestarted_identity_matrix()
+    % Test whether the correct outputs are returned using an identity
+    % matrix when the unrestarted algorithm is called
+
+    % Setup a trivial linear system
+    A = eye(3);
+    b = ones(3, 1);
+
+    % Call function
+    [x, flag, relresvec, mvec, time] = pd_gmres(A, b);
+
+    % Compare with expected outputs
+    assertElementsAlmostEqual(x, ones(3, 1));
+    assert(flag == 1);
+    assertElementsAlmostEqual(relresvec, [1; 0]);
+    assert(isnan(mvec));
+    assert(time > 0 && time < 5);
+end
+
+function test_outputs_restarted_identity_matrix()
+    % Test whether the correct outputs are returned using an identity
+    % matrix when the restarted algorithm is called
+
+    A = eye(3);
+    b = [2; 3; 4];
+    mInitial = 1;
+    mMinMax = [1; 3];
+    mStep = 1;
+    tol = 1e-9;
+    maxit = 10;
+    xInitial = zeros(3, 1);
+    alphaPD = [-3; 5];
+
+    % Call function
+    [x, flag, relresvec, mvec, time] = ...
+        pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD);
+
+    % Compare with expected outputs
+    assertElementsAlmostEqual(x, [2; 3; 4]);
+    assert(flag == 1);
+    assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertEqual(mvec, [1; 1]);
+    assert(time > 0 && time < 5);
+
 end
