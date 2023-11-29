@@ -113,15 +113,15 @@ function test_mInitial_not_given_empty_or_equal_to_n_use_unrestarted()
     b = ones(3, 1);
 
     % Only provide A and b
-    [~, ~, ~, ~, mvec, ~] = pd_gmres(A, b);
+    [~, ~, ~, mvec, ~] = pd_gmres(A, b);
     assert(isnan(mvec));
 
     % Pass mInitial empty
-    [~, ~, ~, ~, mvec, ~] = pd_gmres(A, b, []);
+    [~, ~, ~, mvec, ~] = pd_gmres(A, b, []);
     assert(isnan(mvec));
 
     % Pass mInitial = 3
-    [~, ~, ~, ~, mvec, ~] = pd_gmres(A, b, 3);
+    [~, ~, ~, mvec, ~] = pd_gmres(A, b, 3);
     assert(isnan(mvec));
 
 end
@@ -132,7 +132,7 @@ function test_mInitial_given_use_restarted()
 
     A = eye(3);
     b = ones(3, 1);
-    [~, ~, ~, ~, mvec, ~] = pd_gmres(A, b, 1);
+    [~, ~, ~, mvec, ~] = pd_gmres(A, b, 1);
     assert(~all(isnan(mvec)));
 
 end
@@ -293,13 +293,12 @@ function test_outputs_unrestarted_identity_matrix()
     b = ones(3, 1);
 
     % Call function
-    [x, flag, relres, relresvec, mvec, time] = pd_gmres(A, b);
+    [x, flag, relresvec, mvec, time] = pd_gmres(A, b);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, ones(3, 1));
     assert(flag == 1);
-    assertElementsAlmostEqual(relres, 0);
-    assertElementsAlmostEqual(relresvec, [1.7320508075688770; 0]);
+    assertElementsAlmostEqual(relresvec, [1; 0]);
     assert(isnan(mvec));
     assert(time > 0 && time < 5);
 end
@@ -319,13 +318,12 @@ function test_outputs_restarted_identity_matrix()
     alphaPD = [-3; 5];
 
     % Call function
-    [x, flag, relres, relresvec, mvec, time] = ...
+    [x, flag, relresvec, mvec, time] = ...
         pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [2; 3; 4]);
     assert(flag == 1);
-    assert(relres <= tol);
     assertElementsAlmostEqual(relresvec, [1; 0]);
     assertEqual(mvec, [1; 1]);
     assert(time > 0 && time < 5);

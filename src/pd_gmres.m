@@ -1,4 +1,4 @@
-function [x, flag, relres, relresvec, mvec, time] = ...
+function [x, flag, relresvec, mvec, time] = ...
     pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD, ...
              varargin)
     % PD-GMRES Proportional-Derivative GMRES(m)
@@ -12,7 +12,7 @@ function [x, flag, relres, relresvec, mvec, time] = ...
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relres, iter, resvec, mvec, time] = pd_gmres(A, b, ...
+    %   [x, flag, relresvec, mvec, time] = pd_gmres(A, b, ...
     %       mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD)
     %
     %
@@ -67,15 +67,16 @@ function [x, flag, relres, relresvec, mvec, time] = ...
     %   flag:       boolean
     %               1 if the algorithm has converged, 0 otherwise.
     %
-    %   relres:     scalar
-    %               Last relative residual norm.
-    %
     %   relressvec: (1 up to maxit)-by-1 vector
-    %               Vector of relative residual norms.
+    %               Vector of relative residual norms. The last relative
+    %               residual norm is simply given by relresvec(end).
     %
     %   mvec:       (1 up to maxit)-by-1 vector
     %               Vector of restart parameter values. In case the
     %               unrestarted algorithm is invoked, mvec = NaN.
+    %
+    %   time:       scalar
+    %               Computational time in seconds.
     %
     %   References:
     %   -----------
@@ -367,8 +368,6 @@ function [x, flag, relres, relresvec, mvec, time] = ...
             xInitial = xm;  % update and restart
             restart = restart + 1;
         end
-        % Compute the relative residual
-        relres = norm(b - A * xm) / norm(b);
     end
 
     time = toc();  % record CPU time
