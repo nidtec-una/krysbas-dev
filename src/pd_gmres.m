@@ -269,7 +269,7 @@ function [x, flag, relres, relresvec, mvec, time] = ...
         tic();
 
         % Calll MATLAB bult-in gmres
-        [x, flag, relres, ~, relresvec] = ...
+        [x, flag, relres, ~, resvec] = ...
             gmres(A, b, [], tol, maxit, [], [], xInitial);
 
         % gmres uses a flag system. We only care wheter the solution has
@@ -282,8 +282,9 @@ function [x, flag, relres, relresvec, mvec, time] = ...
 
         % gmres saves the full history of residual vectors norm of every
         % iteration of gmres or gmres(m) (inner iterationes). We only save
-        % the last one (per cycle).
-        relresvec = [relresvec(1); relresvec(end)];
+        % the last one (per cycle). Note that we also return the normalized
+        % residual vector.
+        relresvec = [resvec(1); resvec(end)] ./ resvec(1);
 
         % The vector of restart parameters is not used, return NaN
         mvec = NaN;
