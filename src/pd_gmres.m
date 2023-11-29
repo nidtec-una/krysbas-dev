@@ -279,7 +279,8 @@ function [x, flag, relres, resvec, mvec, time] = ...
             flag = 0;
         end
 
-        % gmres saves the full history of residual vectors. We only save
+        % gmres saves the full history of residual vectors norm of every
+        % iteration of gmres or gmres(m) (inner iterationes). We only save
         % the last one (per cycle).
         resvec = [resvec(1); resvec(end)];
 
