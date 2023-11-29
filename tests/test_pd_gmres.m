@@ -293,13 +293,13 @@ function test_outputs_unrestarted_identity_matrix()
     b = ones(3, 1);
 
     % Call function
-    [x, flag, relres, resvec, mvec, time] = pd_gmres(A, b);
+    [x, flag, relres, relresvec, mvec, time] = pd_gmres(A, b);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, ones(3, 1));
     assert(flag == 1);
     assertElementsAlmostEqual(relres, 0);
-    assertElementsAlmostEqual(resvec, [1.7320508075688770; 0]);
+    assertElementsAlmostEqual(relresvec, [1.7320508075688770; 0]);
     assert(isnan(mvec));
     assert(time > 0 && time < 5);
 end
@@ -319,14 +319,14 @@ function test_outputs_restarted_identity_matrix()
     alphaPD = [-3; 5];
 
     % Call function
-    [x, flag, relres, resvec, mvec, time] = ...
+    [x, flag, relres, relresvec, mvec, time] = ...
         pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [2; 3; 4]);
     assert(flag == 1);
     assert(relres <= tol);
-    assertElementsAlmostEqual(resvec, [1; 0]);
+    assertElementsAlmostEqual(relresvec, [1; 0]);
     assertEqual(mvec, [1; 1]);
     assert(time > 0 && time < 5);
 
