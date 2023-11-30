@@ -292,7 +292,7 @@ function test_outputs_unrestarted_identity_matrix()
     A = eye(3);
     b = ones(3, 1);
 
-    % Call function
+    % Call PD-GMRES
     [x, flag, relresvec, mvec, time] = pd_gmres(A, b);
 
     % Compare with expected outputs
@@ -307,19 +307,18 @@ function test_outputs_restarted_identity_matrix()
     % Test whether the correct outputs are returned using an identity
     % matrix when the restarted algorithm is called
 
+    % Setup a trivial linear system
     A = eye(3);
     b = [2; 3; 4];
+    
+    % Setup PD-GMRES
     mInitial = 1;
-    mMinMax = [1; 3];
-    mStep = 1;
     tol = 1e-9;
     maxit = 10;
-    xInitial = zeros(3, 1);
-    alphaPD = [-3; 5];
 
-    % Call function
+    % Call PD-GMRES
     [x, flag, relresvec, mvec, time] = ...
-        pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD);
+        pd_gmres(A, b, mInitial, [], [], tol, maxit, [], []);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [2; 3; 4]);
@@ -332,7 +331,11 @@ end
 
 function test_embree3()
     % Test Embree's 3x3 linear system from https://www.jstor.org/stable/25054403
-    % with PD-GMRES
+    % with PD-GMRES. We construct two checks, one with mInitial = 1, and
+    % one with mInitial = 2. Note that the gmres(m) algorithm with m = 2,
+    % does not converge (this was proven by Embree in his paper). This, however,
+    % does not occur with the PD-GMRES, which adaptively changes the value
+    % of m to avoid stagnation.
 
     % Load A and b
     load '../data/embree3.mat' Problem
@@ -340,16 +343,34 @@ function test_embree3()
     b = Problem.b;
 
     % Setup PD-GMRES
-    mInitial = 1;
-    mMinMax = [1; 3];
-    mStep = 1;
+    mInitials = [1; 2];
     tol = 1e-9;
     maxit = 20;
-    xInitial = [0; 0; 0];
-    alphaPD = [-3; 5];
 
-    [x, flag, relresvec, mvec, ~] = ...
-        pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD);
+    % Loop over the values of mInitials, i.e., {1, 2}.
+    for i=1:length(mInitials)
+        % Call PD-GMRES
+        [x, flag, relresvec, mvec, ~] = ...
+            pd_gmres(A, b, mInitials(i), [], [], tol, maxit, [], []);
+        
+        % Compare with expected outputs
+        assertElementsAlmostEqual(x, [8; -7; 1]);
+        assertEqual(flag, 1);
+        if mInitials(i) == 1
+            relresvecExpected = [1.000000000000000
+                                 0.925820099772551
+                                 0.654653670707977
+                                 0];
+            mvecExpected= [1; 1; 1; 2];
+        else
+            relresvecExpected = [1.000000000000000
+                                 0.462910049886276
+                                 0.377189160453301
+                                 0.000000000000001];
+            mvecExpected = [2; 2; 2; 3];
+        end
+        assertElementsAlmostEqual(relresvec, relresvecExpected);
+        assertEqual(mvec, mvecExpected);
+    end
 
-    disp('Done!');
 end
