@@ -1,4 +1,4 @@
-function [H, V] = modified_gram_schmidt_arnoldi(A, v, m)
+function [H, V, mUpdated] = modified_gram_schmidt_arnoldi(A, v, m)
     % Modified Gram-Schmidt Arnoldi iteration
     %
     %   Description:
@@ -10,28 +10,34 @@ function [H, V] = modified_gram_schmidt_arnoldi(A, v, m)
     %   Syntaxis:
     %   ---------
     %
-    %   [H, V] = modified_gram_schmidt_arnoldi(A, v, m)
+    %   [H, V, mUpdated] = modified_gram_schmidt_arnoldi(A, v, m)
     %
     %   Input parameters:
     %   -----------------
     %
-    %   A:  n-by-n matrix
-    %       Matrix of coefficients.
+    %   A:          n-by-n matrix
+    %               Matrix of coefficients.
     %
-    %   v:  n-by-1 vector
-    %       Normalized residual vector.
+    %   v:          n-by-1 vector
+    %               Normalized residual vector.
     %
-    %   m:  int
-    %       Restart parameter.
+    %   m:          int
+    %               Restart parameter.
     %
     %   Output parameters:
     %   ------------------
     %
-    %   H:  m+1-by-m matrix
-    %       Upper Hessenberg matrix
+    %   H:          m+1-by-m matrix
+    %               Upper Hessenberg matrix.
     %
-    %   V:  n-by-m matrix
-    %       Orthonormal basis of Krylov subspace
+    %   V:          n-by-m matrix
+    %               Orthonormal basis of Krylov subspace.
+    %
+    %   mUpdated:   int
+    %               Updated value of the restart parameter 'm'. This
+    %               parameter changes only if the last element of H is exactly
+    %               0 and the matrix is trunctated. See, in particular, the
+    %               if-else statement inside the Modified Gram-Schmidt block.
     %
     %   References:
     %   -----------
@@ -85,6 +91,7 @@ function [H, V] = modified_gram_schmidt_arnoldi(A, v, m)
             % Slice matrices and return outputs.
             H = H(1:m + 1, 1:m);
             V = V(:, 1:m);
+            mUpdated = m;
             return
         else
             V(:, j + 1) = W(:, j) / H(j + 1, j);
@@ -93,5 +100,9 @@ function [H, V] = modified_gram_schmidt_arnoldi(A, v, m)
     end
 
     % Slice matrix V since we are only interested in the first 'm' columns
-    V = V(1:n, 1:m);
+    V = V(:, 1:m);
+    
+    % m will remain the same in this case, but we need it in the output
+    mUpdated = m;
+
 end

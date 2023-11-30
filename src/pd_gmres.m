@@ -328,11 +328,7 @@ function [x, flag, relresvec, mvec, time] = ...
         v1 = r / beta;
 
         % Modifed Gram-Schmidt Arnoldi iteration
-        [H, V] = modified_gram_schmidt_arnoldi(A, v1, m);
-        %[H, V, m] = modified_gram_schmidt_arnoldi(A, v1, m);
-
-        % Update m in case last element of H is exactly 0
-        [~, m] = size(H);
+        [H, V, m] = modified_gram_schmidt_arnoldi(A, v1, m);
 
         % starts plane rotation
         g = zeros(m + 1, 1);
