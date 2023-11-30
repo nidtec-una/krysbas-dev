@@ -310,6 +310,7 @@ function [x, flag, relresvec, mvec, time] = ...
 
     while flag == 0
 
+        % Control block
         if iter(size(iter, 1), :) ~= 1
             [miter] = pd_rule(m, mInitial, mMin, res, ...
                               iter(size(iter, 1), :), ...
@@ -319,7 +320,6 @@ function [x, flag, relresvec, mvec, time] = ...
         else
             m = mInitial;
         end
-
         mvec(iter(size(iter, 1), :) + 1, 1) = m;
 
         % Compute normalized residual vector
@@ -327,41 +327,21 @@ function [x, flag, relresvec, mvec, time] = ...
         beta = norm(r);
         v1 = r / beta;
 
-        % Modifed Gram-Schmidt Arnoldi iteration
+        % Modified Gram-Schmidt Arnoldi iteration
         [H, V, m] = modified_gram_schmidt_arnoldi(A, v1, m);
 
-        % starts plane rotation
-        g = zeros(m + 1, 1);
-        g(1, 1) = beta;
-
-        % Plane rotations (QR decompostion)
-        for j = 1:m
-            P = eye(m + 1);
-            sin = H(j + 1, j) / (sqrt(H(j + 1, j)^2 + H(j, j)^2));
-            cos = H(j, j) / (sqrt(H(j + 1, j)^2 + H(j, j)^2));
-            P(j, j) = cos;
-            P(j + 1, j + 1) = cos;
-            P(j, j + 1) = sin;
-            P(j + 1, j) = -sin;
-            H = P * H;
-            g = P * g;
-        end
-
-        % ends plane rotation
-
-        % [H_uptri, g] = plane_rotation(H, beta) (the function)
-        % [H, g] = plane_rotation(H, beta) (the function)
-
+        % Plane rotations
+        [HUpTri, g] = plane_rotations(H, beta);
+        
         % Solve the least-squares problem
-        Rm = H(1:m, 1:m);
+        Rm = HUpTri(1:m, 1:m);
         gm = g(1:m);
         minimizer = Rm \ gm;
-        xm = xInitial + V * minimizer;
-        
-        
+        xm = xInitial + V * minimizer;       
         res(restart + 1, :) = abs(g(m + 1, 1));
         iter(restart + 1, :) = restart + 1;
         relresvec(size(relresvec, 1) + 1, :) = abs(g(m + 1, 1) / res(1, 1));
+        
         % Use last component of g as residual
         if abs(g(m + 1, 1)) / res(1, 1) < tol || size(relresvec, 1) == maxit
             flag = 1;  % solution has converged
