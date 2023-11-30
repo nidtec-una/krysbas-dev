@@ -42,8 +42,14 @@ function test_poisson_1d_dir_bc()
     %
     %                         - u''(x) = f(x)
     %
-    %   subject to u(0) = g(0) = 0, u(1) = g(1) = 1; where f(x) = 6*x and
-    %   g(x) = x^3.
+    %   subject to
+    %
+    %   	        u(0) = g(0) = 0, u(1) = g(1) = 1; 
+    % 
+    %   where 
+    %   
+    %           f(x) = 6*x          and         g(x) = x^3.
+    %
     %   Discretization results in a linear system Au = b
 
     % Source term and boundary values
@@ -65,7 +71,6 @@ function test_poisson_1d_dir_bc()
     % the boundary conditions g(x) and the source term f(x).
     b = h * h * f(linspace(aStart + h, aEnd - h, INNERNODES))'; % b = h^2*f(x)
     % Add contribution from Dirichlet nodes to vector 'b'
-    % b(1, 1) = g( astart );
     b(INNERNODES, 1) = b(INNERNODES, 1) + g(aEnd);
 
     % Exact solution 'uExact'
@@ -94,9 +99,15 @@ function test_poisson_1d_dir_neu_bc()
     %
     %                         - u''(x) = f(x)
     %
-    %   subject to u(0) = g(0) = 1, u'(1) = 4; where f(x) = - 2 and
-    %   g(x) = ( x + 1 )^2.
-    %   Discretization results in a linear system Au = b
+    %   subject to
+    %
+    %                   u(0) = g(0) = 1, u'(1) = 4;
+    %
+    %   where
+    %
+    %            f(x) = - 2       and      g(x) = ( x + 1 )^2.
+    %
+    % \Discretization results in a linear system Au = b
 
     % Source term and boundary values
     f = - 2;
@@ -115,7 +126,6 @@ function test_poisson_1d_dir_neu_bc()
         diag(ones(INNERNODES+1 - 1, 1), -1);
     % Contribution due to Neumann boundary condition
     A(INNERNODES+1, INNERNODES+1) = 1;
-    % Change 'INNERNODES+1' by 'NODES-1'?
 
     % Right-hand side 'b' (RHS)
     % RHS is composed by the contributions from
@@ -159,8 +169,9 @@ function test_poisson_1d_robin_bc()
     %       	        alpha * u(0) + u'(0) = 3, 
     %                   beta * u(1) + u'(1) = 0,
     %
-    %   where   f(x) = 2 and
-    %           g(x) = ( x + 1 )^2.
+    %   where   
+    % 
+    %           f(x) = 2        and        g(x) = ( x + 1 )^2.
     %
     %   Discretization results in a linear system Au = b
 
@@ -213,22 +224,31 @@ function test_poisson_1d_robin_bc()
 end
 
 function test_dir_2d_dir_bc()
+    % Test solvers for a 2D-FDM linear system with 
+    % Dirichlet boundaries.
+    %
     % Description:
     % ============
     %
     % Solve a 2D-Poisson equation at [0, 1] x [0, 1]
-    % - u_xx - u_yy = f(x, y) 
+    % 
+    %                      - u_xx - u_yy = f(x, y) 
     % subject to
-    % u = 0 along the boundary
+    %                     u = 0 along the boundary
     % where
-    % f(x, y) = 2*pi*pi*sin(pi*x)*sin(pi*y)
+    % 
+    %               f(x, y) = 2*pi*pi*sin(pi*x)*sin(pi*y)
+    % 
     % Analytical solution:
-    % u(x, y) = g(x, y) = sin(pi*x)*sin(pi*y)
+    % 
+    %               u(x, y) = g(x, y) = sin(pi*x)*sin(pi*y)
+    %
+    %   Discretization results in a linear system Au = b
 
     % Source term and boundary values
     f = @(x, y) 2 * pi * pi * sin( pi*x ) * sin( pi*y );
     g = @(x, y) sin( pi*x ) * sin( pi*y );
-    NODES1D = 7;
+    NODES1D = 5;
     INNODES1D = NODES1D - 2;
     aStart = 0;
     aEnd = 1;
@@ -236,12 +256,13 @@ function test_dir_2d_dir_bc()
 
     % Left-hand side (LHS) matrix 'A'
     % LHS is composed by the finite-difference coefficients for u''(x)
-    M = 4*eye(INNODES1D) - diag(ones(INNODES1D-1,1), 1) - diag(ones(INNODES1D-1, 1), -1);
+    M = 4*eye(INNODES1D) - diag(ones(INNODES1D-1,1), 1) ...
+        -diag(ones(INNODES1D-1, 1), -1);
     N = -1*eye(INNODES1D);
     Z = zeros(INNODES1D);
-    % A = [M N Z; N M N; Z N M]; %
-    % This requires an external 'blktridiag' script
-    A = blktridiag(M, N, N, INNODES1D);
+    A = [M N Z; N M N; Z N M];
+    % For INNODES1D > 3, previous line requires an external 'blktridiag' script
+    % A = blktridiag(M, N, N, INNODES1D);
 
     % Right-hand side (RHS) 'b'
     % RHS is composed by the contributions from 
@@ -255,13 +276,6 @@ function test_dir_2d_dir_bc()
     end
 
     % Exact solution 'uExact'
-    %uExact = zeros(INNODES1D*INNODES1D, 1);
-    %for i = 1:INNODES1D
-    %    for j = 1:INNODES1D
-    %        uExact( (i-1)*INNODES1D + j, 1 ) = g(i*h, j*h); % Check this line!
-    %    end
-    %end
-    %uE = uExact; %; % Only for testing
     uExact = ...
     [0.526514643772757;
    0.744604150011472;
