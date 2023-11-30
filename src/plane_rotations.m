@@ -37,7 +37,7 @@ function [HUpTri, g] = plane_rotations(H, beta)
     %
     %   References:
     %   -----------
-    %   
+    %
     %   [1] Saad, Y. (2003). Iterative methods for sparse linear systems.
     %   Society for Industrial and Applied Mathematics.
     %
@@ -64,24 +64,24 @@ function [HUpTri, g] = plane_rotations(H, beta)
 
     % Infer 'm' from the size of the upper Hessenber matrix H
     [~, m] = size(H);
-    
+
     % Create rhs vector g
     g = zeros(m + 1, 1);
     g(1, 1) = beta;
 
     % Plane rotations
     for j = 1:m
-        % Obtain sines and cosines 
+        % Obtain sines and cosines
         s = H(j + 1, j) / (sqrt(H(j + 1, j)^2 + H(j, j)^2));
         c = H(j, j) / (sqrt(H(j + 1, j)^2 + H(j, j)^2));
-        
+
         % Build rotation matrix
         P = eye(m + 1);
         P(j, j) = c;
         P(j + 1, j + 1) = c;
         P(j, j + 1) = s;
         P(j + 1, j) = -s;
-        
+
         % Update HUpTri and g
         H = P * H;
         g = P * g;
@@ -90,4 +90,3 @@ function [HUpTri, g] = plane_rotations(H, beta)
     HUpTri = H;
 
 end
-

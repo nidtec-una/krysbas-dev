@@ -332,18 +332,18 @@ function [x, flag, relresvec, mvec, time] = ...
 
         % Plane rotations
         [HUpTri, g] = plane_rotations(H, beta);
-        
+
         % Solve the least-squares problem
         Rm = HUpTri(1:m, 1:m);
         gm = g(1:m);
         minimizer = Rm \ gm;
-        xm = xInitial + V * minimizer;       
-        
+        xm = xInitial + V * minimizer;
+
         % Update residual norm, iterations, and relative residual vector
         res(restart + 1, :) = abs(g(m + 1, 1));
         iter(restart + 1, :) = restart + 1;
         relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
-        
+
         % Check convergence
         if relresvec(end) < tol || size(relresvec, 1) == maxit
             % We reached convergence.
@@ -354,9 +354,9 @@ function [x, flag, relresvec, mvec, time] = ...
             xInitial = xm;
             restart = restart + 1;
         end
-    
+
     end
 
-    time = toc(); 
+    time = toc();
 
 end

@@ -101,7 +101,7 @@ function [H, V, mUpdated] = modified_gram_schmidt_arnoldi(A, v, m)
 
     % Slice matrix V since we are only interested in the first 'm' columns
     V = V(:, 1:m);
-    
+
     % m will remain the same in this case, but we need it in the output
     mUpdated = m;
 

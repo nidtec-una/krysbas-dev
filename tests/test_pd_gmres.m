@@ -310,7 +310,7 @@ function test_outputs_restarted_identity_matrix()
     % Setup a trivial linear system
     A = eye(3);
     b = [2; 3; 4];
-    
+
     % Setup PD-GMRES
     mInitial = 1;
     tol = 1e-9;
@@ -329,7 +329,7 @@ function test_outputs_restarted_identity_matrix()
 
 end
 
-function test_embree3()
+function test_embree_three_by_three_toy_example()
     % Test Embree's 3x3 linear system from https://www.jstor.org/stable/25054403
     % with PD-GMRES. We construct two checks, one with mInitial = 1, and
     % one with mInitial = 2. Note that the gmres(m) algorithm with m = 2,
@@ -338,7 +338,7 @@ function test_embree3()
     % of m to avoid stagnation.
 
     % Load A and b
-    load '../data/embree3.mat' Problem
+    load '../data/embree3.mat' Problem;
     A = Problem.A;
     b = Problem.b;
 
@@ -348,11 +348,11 @@ function test_embree3()
     maxit = 20;
 
     % Loop over the values of mInitials, i.e., {1, 2}.
-    for i=1:length(mInitials)
+    for i = 1:length(mInitials)
         % Call PD-GMRES
         [x, flag, relresvec, mvec, ~] = ...
             pd_gmres(A, b, mInitials(i), [], [], tol, maxit, [], []);
-        
+
         % Compare with expected outputs
         assertElementsAlmostEqual(x, [8; -7; 1]);
         assertEqual(flag, 1);
@@ -361,7 +361,7 @@ function test_embree3()
                                  0.925820099772551
                                  0.654653670707977
                                  0];
-            mvecExpected= [1; 1; 1; 2];
+            mvecExpected = [1; 1; 1; 2];
         else
             relresvecExpected = [1.000000000000000
                                  0.462910049886276
