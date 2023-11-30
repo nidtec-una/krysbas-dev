@@ -329,7 +329,12 @@ function [x, flag, relresvec, mvec, time] = ...
 
         % Modifed Gram-Schmidt Arnoldi iteration
         [H, V] = modified_gram_schmidt_arnoldi(A, v1, m);
+        %[H, V, m] = modified_gram_schmidt_arnoldi(A, v1, m);
 
+        % Update m in case last element of H is exactly 0
+        [~, m] = size(H);
+
+        % starts plane rotation
         g = zeros(m + 1, 1);
         g(1, 1) = beta;
 
@@ -346,18 +351,18 @@ function [x, flag, relresvec, mvec, time] = ...
             g = P * g;
         end
 
-        R = zeros(m, m);
-        G = zeros(m, 1);
+        % ends plane rotation
 
-        for k = 1:m
-            G(k) = g(k);
-            for i = 1:m
-                R(k, i) = H(k, i);
-            end
-        end
+        % [H_uptri, g] = plane_rotation(H, beta) (the function)
+        % [H, g] = plane_rotation(H, beta) (the function)
 
-        minimizer = R \ G;
+        % Solve the least-squares problem
+        Rm = H(1:m, 1:m);
+        gm = g(1:m);
+        minimizer = Rm \ gm;
         xm = xInitial + V * minimizer;
+        
+        
         res(restart + 1, :) = abs(g(m + 1, 1));
         iter(restart + 1, :) = restart + 1;
         relresvec(size(relresvec, 1) + 1, :) = abs(g(m + 1, 1) / res(1, 1));
