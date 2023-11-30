@@ -338,11 +338,11 @@ function test_embree_three_by_three_toy_example()
     % of m to avoid stagnation.
 
     % Load A and b
-    rootFolder = fileparts(pwd); % go to the root folder
-    ls;
-    dataFolder = fullfile(rootFolder, 'data'); % enter the data folder
-    ls;
-    load 'data/embree3.mat' Problem;
+    rootFolder = fileparts(pwd);
+    dataFolder = fullfile(rootFolder, 'data');
+    matrixPath = fullfile(dataFolder, 'embree3.mat');
+    %load matrixPath Problem;
+    load(matrixPath, "Problem");
     A = Problem.A;
     b = Problem.b;
 
