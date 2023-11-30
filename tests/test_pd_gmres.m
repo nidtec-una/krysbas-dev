@@ -340,6 +340,7 @@ function test_embree_three_by_three_toy_example()
     % Load A and b
     rootFolder = fileparts(pwd); % go to the root folder
     dataFolder = fullfile(rootFolder, 'data'); % enter the data folder
+    disp(dataFolder);
     load 'embree3.mat' Problem;
     A = Problem.A;
     b = Problem.b;
