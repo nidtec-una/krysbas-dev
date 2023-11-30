@@ -374,3 +374,51 @@ function test_embree_three_by_three_toy_example()
     end
 
 end
+
+function test_sherman_one()
+    % Test pd_gmres with sherman1 matrix
+
+    % Load A and b
+    load('data/sherman1.mat', 'Problem');
+    A = Problem.A;
+    b = Problem.b;
+
+    % Setup PD-GMRES
+    mInitial = 30;
+    tol = 1e-9;
+    mStep = 3;
+    maxit = 1000;
+
+    % Call PD-GMRES
+    [~, flag, ~, mvec, ~] = ...
+            pd_gmres(A, b, mInitial, [], mStep, tol, maxit, [], []);
+
+    % We check if it has converged and the total sum of outer iterations
+    assertEqual(flag, 1);
+    assertEqual(sum(mvec), 955);
+
+end
+
+function test_sherman_four()
+    % Test pd_gmres with sherman4 matrix
+
+    % Load A and b
+    load('data/sherman4.mat', 'Problem');
+    A = Problem.A;
+    b = Problem.b;
+
+    % Setup PD-GMRES
+    mInitial = 30;
+    tol = 1e-9;
+    mStep = 3;
+    maxit = 1000;
+
+    % Call PD-GMRES
+    [~, flag, ~, mvec, ~] = ...
+            pd_gmres(A, b, mInitial, [], mStep, tol, maxit, [], []);
+
+    % We check if it has converged and the total sum of outer iterations
+    assertEqual(flag, 1);
+    assertEqual(sum(mvec), 440);
+
+end
