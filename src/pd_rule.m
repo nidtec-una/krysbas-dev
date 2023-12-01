@@ -1,8 +1,55 @@
-function miter = pd_rule(m, minitial, mmin, ...
-                         res, iter, mstep, mmax, alpha, delta)
+function miter = pd_rule(m, mInitial, mMin, res, iter, ...
+                         mStep, mMax, alphaP, alphaD)
     % Rule for the Proportional-Derivative law.
     %
-    %   TODO: Complete rest of the docstring.
+    %   %   Signature:
+    %   ----------
+    %
+    %   miter = pd_rule(m, mInitial, mMin, ...
+    %                    res, iter(size(iter, 1), :), ... 
+    %                    mStep, mMax, alphaP, alphaD)
+    %     
+    %   Input Parameters:
+    %   -----------------
+    %
+    %   m:          int
+    %               Restart parameter at the last cycle
+    %
+    %   mInitial:   int
+    %               Initial restart parameter at the last cycle.
+    %             
+    %   mMin:       int
+    %               Minimum value of the restart parameter m.            
+    %
+    %   res         number of cycles-by-1 vector
+    %               Vector of residual norms of every outer iteration
+    %               (cycles).
+    %
+    %   iter        number of cycles-by-1 vector
+    %               Number of restart cycles previous.
+    %
+    %   mStep:      int
+    %               Step size for increasing the mInitial when m < mMinMax(1). 
+    %
+    %   mMax:       int
+    %               Maximum value of the restart paramter m.
+    %
+    %   maxit:      int
+    %               Maximum number of outer iterations.
+    %
+    %   alphaP:     int
+    %               Proportional coefficient from PD controller.
+    %
+    %   alphaD:     int
+    %               Derivative coefficient from PD controller.
+    %
+    %
+    %   Output parameters:
+    %   ------------------
+    %
+    %   miter:      int
+    %               Restart parameter at the new cycle.
+    %
     %
     %   Copyright:
     %   ----------
@@ -30,8 +77,8 @@ function miter = pd_rule(m, minitial, mmin, ...
     if iter > 3
 
         mj = m + ceil( ...
-                      alpha * (res(iter, :) / res(iter - 1, :)) + ...
-                      delta * ( ...
+                      alphaP * (res(iter, :) / res(iter - 1, :)) + ...
+                      alphaD * ( ...
                                (res(iter, :) - res(iter - 2, :)) / ...
                                (2 * res(iter - 1, :)) ...
                               ) ...
@@ -39,32 +86,22 @@ function miter = pd_rule(m, minitial, mmin, ...
 
 
     elseif iter > 2
-        mj = m + ceil(alpha * (res(iter, :) / res(iter - 1, :)));
+        mj = m + ceil(alphaP * (res(iter, :) / res(iter - 1, :)));
         
 
     else
-        mj = minitial;
+        mj = mInitial;
     end
 
-    % ap=res(iter,:)/res(iter-1,:)
-    % if iter >3
-    % ad=(res(iter,:) - res(iter-2,:))/(2*res(iter-1,:))
-    % end
 
-    % if mj <= 0
-    %      mj=abs(mj) + mstep;
-    % end
-    if mj < mmin
-        minitial = minitial + mstep;
-        mj = minitial;
+    if mj < mMin
+        mInitial = mInitial + mStep;
+        mj = mInitial;
     end
 
-    if mj > mmax
-        %    miter=minitial;
-        %     miter=miter-mstep;
-        % mj=mmax-mstep;
-        mj = mmax;
+    if mj > mMax
+        mj = mMax;
     end
 
-    miter = [mj minitial];
+    miter = [mj mInitial];
     
