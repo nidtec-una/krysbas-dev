@@ -6,9 +6,9 @@ function miter = pd_rule(m, mInitial, mMin, res, iter, ...
     %   ----------
     %
     %   miter = pd_rule(m, mInitial, mMin, ...
-    %                    res, iter(size(iter, 1), :), ... 
+    %                    res, iter(size(iter, 1), :), ...
     %                    mStep, mMax, alphaP, alphaD)
-    %     
+    %
     %   Input Parameters:
     %   -----------------
     %
@@ -17,9 +17,9 @@ function miter = pd_rule(m, mInitial, mMin, res, iter, ...
     %
     %   mInitial:   int
     %               Initial restart parameter at the last cycle.
-    %             
+    %
     %   mMin:       int
-    %               Minimum value of the restart parameter m.            
+    %               Minimum value of the restart parameter m.
     %
     %   res         number of cycles-by-1 vector
     %               Vector of residual norms of every outer iteration
@@ -29,7 +29,7 @@ function miter = pd_rule(m, mInitial, mMin, res, iter, ...
     %               Number of restart cycles previous.
     %
     %   mStep:      int
-    %               Step size for increasing the mInitial when m < mMinMax(1). 
+    %               Step size for increasing the mInitial when m < mMinMax(1).
     %
     %   mMax:       int
     %               Maximum value of the restart paramter m.
@@ -72,27 +72,22 @@ function miter = pd_rule(m, mInitial, mMin, res, iter, ...
     %   with this file.  If not, see <http://www.gnu.org/licenses/>.
     %
 
-
-
     if iter > 3
 
         mj = m + ceil( ...
                       alphaP * (res(iter, :) / res(iter - 1, :)) + ...
                       alphaD * ( ...
-                               (res(iter, :) - res(iter - 2, :)) / ...
-                               (2 * res(iter - 1, :)) ...
-                              ) ...
+                                (res(iter, :) - res(iter - 2, :)) / ...
+                                (2 * res(iter - 1, :)) ...
+                               ) ...
                      );
-
 
     elseif iter > 2
         mj = m + ceil(alphaP * (res(iter, :) / res(iter - 1, :)));
-        
 
     else
         mj = mInitial;
     end
-
 
     if mj < mMin
         mInitial = mInitial + mStep;
@@ -104,4 +99,3 @@ function miter = pd_rule(m, mInitial, mMin, res, iter, ...
     end
 
     miter = [mj mInitial];
-    
