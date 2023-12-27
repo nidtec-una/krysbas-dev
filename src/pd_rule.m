@@ -1,4 +1,4 @@
-function miter = pd_rule(m, mInitial, mMin, res, iter, ...
+function miter = pd_rule(m, n, mInitial, mMin, res, iter, ...
                          mStep, mMax, alphaP, alphaD)
     % Rule for the Proportional-Derivative law.
     %
@@ -14,6 +14,9 @@ function miter = pd_rule(m, mInitial, mMin, res, iter, ...
     %
     %   m:          int
     %               Restart parameter at the last cycle
+    %
+    %   n:          int
+    %               size of the square matrix A
     %
     %   mInitial:   int
     %               Initial restart parameter at the last cycle.
@@ -96,6 +99,10 @@ function miter = pd_rule(m, mInitial, mMin, res, iter, ...
 
     if mj > mMax
         mj = mMax;
+    end
+
+    if mInitial + mStep > n
+        mj = n;
     end
 
     miter = [mj mInitial];
