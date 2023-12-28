@@ -26,10 +26,6 @@ Variant of the restarted GMRES that employs a Proportional-Derivative (PD) contr
 
 If you wish to contribute to KrySBAS, please read the [developer guide](https://github.com/nidtec-una/krysbas-dev/blob/dev_guide/dev_guide.md) before opening a pull request.
 
-## Citing
-
-*TODO*: Add Zenodo reference.
-
 ## Feature requests and bug reports
 
 For future requests and bug reports, please create an [issue](https://github.com/nidtec-una/krysbas-dev/issues). In the latter case, we kindly ask you to provide a MWE that reproduces the error.
