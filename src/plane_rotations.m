@@ -18,7 +18,7 @@ function [HUpTri, g] = plane_rotations(H, beta)
     %               Upper Hessenberg matrix.
     %
     %   beta:       int
-    %               Normalized residual vector.
+    %               Norm of the last cycle residual vector.
     %
     %   Output parameters:
     %   ------------------
