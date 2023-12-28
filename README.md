@@ -12,7 +12,7 @@ To install KrySBAS, simply clone this repository and add it to your MATLAB path.
 
 ### PD-GMRES(*m*) ([Núñez & Schaerer & Bhaya, 2018](https://www.sciencedirect.com/science/article/pii/S037704271830030X))
 
-PD-GMRES(*m*) is a variant of the restarted GMRES that employs a Proportional-Derivative (PD) controller for the automatic selection of the restart parameter *m*.
+Variant of the restarted GMRES that employs a Proportional-Derivative (PD) controller for the automatic selection of the restart parameter *m*.
 
 ```Matlab
 [x, flag, relresvec, mvec, time] = pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD)
