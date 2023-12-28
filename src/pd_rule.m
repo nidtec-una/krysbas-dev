@@ -1,13 +1,12 @@
-function miter = pd_rule(m, n, mInitial, mMin, res, iter, ...
-                         mStep, mMax, alphaP, alphaD)
-    % Rule for the Proportional-Derivative law.
+function miter = pd_rule(m, n, mInitial, mMin, mMax, mStep,  ...
+                         res, iter, alphaP, alphaD)
+    % Rule for the Proportional-Derivative law. Algorithm 1 of [1].
     %
     %   %   Signature:
     %   ----------
     %
-    %   miter = pd_rule(m, mInitial, mMin, ...
-    %                    res, iter(size(iter, 1), :), ...
-    %                    mStep, mMax, alphaP, alphaD)
+    %   miter = (m, n, mInitial, mMin, mMax, mStep,  ...
+    %                     res, iter, alphaP, alphaD)
     %
     %   Input Parameters:
     %   -----------------
@@ -50,9 +49,17 @@ function miter = pd_rule(m, n, mInitial, mMin, res, iter, ...
     %   Output parameters:
     %   ------------------
     %
-    %   miter:      int
-    %               Restart parameter at the new cycle.
+    %   miter:      1-by-2 vector
+    %               Restart parameter and Initial restart parameter at the
+    %               new cycle.
     %
+    %    %   References:
+    %   -----------
+    %
+    %   [1] Nunez, R. C., Schaerer, C. E., & Bhaya, A. (2018). A
+    %   proportional-derivative control strategy for restarting the GMRES(m)
+    %   algorithm. Journal of Computational and Applied Mathematics,
+    %   337, 209-224.
     %
     %   Copyright:
     %   ----------
@@ -78,15 +85,15 @@ function miter = pd_rule(m, n, mInitial, mMin, res, iter, ...
     if iter > 3
 
         mj = m + ceil( ...
-                      alphaP * (res(iter, :) / res(iter - 1, :)) + ...
+                      alphaP * (res(iter) / res(iter - 1)) + ...
                       alphaD * ( ...
-                                (res(iter, :) - res(iter - 2, :)) / ...
-                                (2 * res(iter - 1, :)) ...
+                                (res(iter) - res(iter - 2)) / ...
+                                (2 * res(iter - 1)) ...
                                ) ...
                      );
 
     elseif iter > 2
-        mj = m + ceil(alphaP * (res(iter, :) / res(iter - 1, :)));
+        mj = m + ceil(alphaP * (res(iter) / res(iter - 1)));
 
     else
         mj = mInitial;
