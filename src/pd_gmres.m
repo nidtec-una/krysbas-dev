@@ -271,7 +271,7 @@ function [x, flag, relresvec, mvec, time] = ...
         tic();
 
         % Calll MATLAB bult-in gmres
-        [x, flag, relres, ~, resvec] = ...
+        [x, flag, ~, ~, resvec] = ...
             gmres(A, b, [], tol, maxit, [], [], xInitial);
 
         % gmres uses a flag system. We only care wheter the solution has
@@ -310,6 +310,7 @@ function [x, flag, relresvec, mvec, time] = ...
 
     while flag == 0
 
+        % Control block
         if iter(size(iter, 1), :) ~= 1
             [miter] = pd_rule(m, n, mInitial, mMin, mMax, ...
                               mStep, res, iter(size(iter, 1), :), ...
@@ -319,7 +320,6 @@ function [x, flag, relresvec, mvec, time] = ...
         else
             m = mInitial;
         end
-
         mvec(iter(size(iter, 1), :) + 1, 1) = m;
 
         % Compute normalized residual vector
@@ -327,50 +327,36 @@ function [x, flag, relresvec, mvec, time] = ...
         beta = norm(r);
         v1 = r / beta;
 
-        % Modifed Gram-Schmidt Arnoldi iteration
-        [H, V] = modified_gram_schmidt_arnoldi(A, v1, m);
+        % Modified Gram-Schmidt Arnoldi iteration
+        [H, V, m] = modified_gram_schmidt_arnoldi(A, v1, m);
 
-        g = zeros(m + 1, 1);
-        g(1, 1) = beta;
+        % Plane rotations
+        [HUpTri, g] = plane_rotations(H, beta);
 
-        % Plane rotations (QR decompostion)
-        for j = 1:m
-            P = eye(m + 1);
-            sin = H(j + 1, j) / (sqrt(H(j + 1, j)^2 + H(j, j)^2));
-            cos = H(j, j) / (sqrt(H(j + 1, j)^2 + H(j, j)^2));
-            P(j, j) = cos;
-            P(j + 1, j + 1) = cos;
-            P(j, j + 1) = sin;
-            P(j + 1, j) = -sin;
-            H = P * H;
-            g = P * g;
-        end
-
-        R = zeros(m, m);
-        G = zeros(m, 1);
-
-        for k = 1:m
-            G(k) = g(k);
-            for i = 1:m
-                R(k, i) = H(k, i);
-            end
-        end
-
-        minimizer = R \ G;
+        % Solve the least-squares problem
+        Rm = HUpTri(1:m, 1:m);
+        gm = g(1:m);
+        minimizer = Rm \ gm;
         xm = xInitial + V * minimizer;
+
+        % Update residual norm, iterations, and relative residual vector
         res(restart + 1, :) = abs(g(m + 1, 1));
         iter(restart + 1, :) = restart + 1;
-        relresvec(size(relresvec, 1) + 1, :) = abs(g(m + 1, 1) / res(1, 1));
-        % Use last component of g as residual
-        if abs(g(m + 1, 1)) / res(1, 1) < tol || size(relresvec, 1) == maxit
-            flag = 1;  % solution has converged
-            x = xm;  % solution vector
+        relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
+
+        % Check convergence
+        if relresvec(end) < tol || size(relresvec, 1) == maxit
+            % We reached convergence.
+            flag = 1;
+            x = xm;
         else
-            xInitial = xm;  % update and restart
+            % We have not reached convergence. Update and restart.
+            xInitial = xm;
             restart = restart + 1;
         end
+
     end
 
-    time = toc();  % record CPU time
+    time = toc();
 
 end
