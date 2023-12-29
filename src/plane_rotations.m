@@ -72,8 +72,8 @@ function [HUpTri, g] = plane_rotations(H, beta)
     % Plane rotations
     for j = 1:m
         % Obtain sines and cosines
-        s = H(j + 1, j) / (sqrt(H(j + 1, j)^2 + H(j, j)^2));
-        c = H(j, j) / (sqrt(H(j + 1, j)^2 + H(j, j)^2));
+        s = H(j + 1, j) / (sqrt(abs(H(j + 1, j))^2 + H(j, j)^2));
+        c = H(j, j) / (sqrt(abs(H(j + 1, j))^2 + H(j, j)^2));
 
         % Build rotation matrix
         P = eye(m + 1);
