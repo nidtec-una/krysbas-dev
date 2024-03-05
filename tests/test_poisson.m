@@ -223,7 +223,7 @@ function test_poisson_1d_robin_bc()
 
 end
 
-function test_dir_2d_dir_bc()
+function test_poisson_2d_dir_bc()
     % Test solvers for a 2D-FDM linear system with 
     % Dirichlet boundaries.
     %
@@ -287,6 +287,94 @@ function test_dir_2d_dir_bc()
    0.744604150011472;
    0.526514643772757];
 
+    % CALL ALGORITHMS: PD_GMRES, ADAPTIVE_GMRES, SWITCH_GMRES, etc.
+    
+    % PD_GMRES
+    tol = 1e-9;
+    maxit = 100;
+    mInitial = 3;
+    uPD_GMRES = pd_gmres(A, b, mInitial, [], [], tol, maxit);
+    
+    % Assert whether the pd_gmres solution match the exact knonw solution
+    assertElementsAlmostEqual(uPD_GMRES, uExact)
+
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NEW! (2024)
+function test_poisson_2d_dir_neu_bc()
+    % Alternative name:
+    % =================
+    % function test_poisson_left_to_right_flow()
+    %
+    % Description:
+    % ============
+    % Test solvers for a 2D-FDM linear system with 
+    % Dirichlet-Neumann boundaries.
+    %
+    % 2-D Poisson equation with Dirichlet boundaries at left (u = 1) 
+    % and right (u = 0) and no-flow at the top and bottom. 
+    % Note that f(x) = 0. The exact solution is linear on u.
+    %
+    % Description:
+    % ============
+    %
+    % Solve a 2D-Poisson equation at [0, 1] x [0, 1]
+    % 
+    %                  u_xx + u_yy = f(x, y) 
+    % subject to
+    %                     u (0, y) = 1
+    %                     u (1, y) = 0
+    %                 du/dy (x, 0) = 0
+    %                 du/dy (x, 1) = 0
+    % where
+    % 
+    %               f(x, y) = 0
+    % 
+    % Analytical solution:
+    % 
+    %               u(x, y) = 1 - x
+    %
+    % Discretization results in a linear system Au = b
+    
+    % Source term and boundary values
+    f = @(x, y) 0;
+    g = @(x, y) 1 - x;
+    NODES1D = 5;
+    INNODES1D = NODES1D - 2;
+    aStart = 0;
+    aEnd = 1;
+    h = ( aEnd - aStart ) / (NODES1D - 1); %;
+    
+    % Left-hand side (LHS) matrix 'A'
+    % LHS is composed by the finite-difference coefficients for u''(x)
+    M = [3 -1 0; -1 3 -1; 0 -1 3];
+    N = (-1)*eye(3);
+    P = [4 -1 0; -1 4 -1; 0 -1 4];
+    Z = zeros(3);
+    A = [M N Z; N P N; Z N M];
+    % For INNODES1D > 3, previous line requires an external 'blktridiag' script
+    % A = blktridiag(M, N, N, INNODES1D);
+    
+    % Right-hand side (RHS) 'b'
+    % RHS is composed by the contributions from 
+    % the boundary conditions g(x) and the source term f(x).
+    b = zeros(INNODES1D*INNODES1D, 1);
+    b(1,1) = 1;
+    b(4,1) = 1;
+    b(7,1) = 1;
+    
+    % Exact solution 'uExact'
+    uExact = ...
+    [0.7500;
+     0.5000;
+     0.2500;
+     0.7500;
+     0.5000;
+     0.2500;
+     0.7500;
+     0.5000;
+     0.2500];
+    
     % CALL ALGORITHMS: PD_GMRES, ADAPTIVE_GMRES, SWITCH_GMRES, etc.
     
     % PD_GMRES
