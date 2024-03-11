@@ -9,11 +9,11 @@ miss_hit
 # pre-commit
 
 # Documentation
-# Sphinx
-# sphinxcontrib-matlabdomain
-# sphinx_rtd_theme
-# sphinx-copybutton
-# myst-parser
+Sphinx
+sphinxcontrib-matlabdomain
+sphinx_rtd_theme
+sphinx-copybutton
+myst-parser
 
 # Notebooks
 # octave_kernel
