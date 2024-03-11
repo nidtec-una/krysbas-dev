@@ -1,7 +1,7 @@
-.. cpp_bids documentation master file
+.. KrySBAS documentation master file
 
-Welcome to CPP BIDS documentation!
-**********************************
+Welcome to KrySBAS documentation page!
+**************************************
 
 .. toctree::
    :maxdepth: 2
@@ -9,8 +9,6 @@ Welcome to CPP BIDS documentation!
 
    general_information
    function_description
-   documentation_styles
-
 
 Indices and tables
 ==================

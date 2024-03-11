@@ -18,9 +18,9 @@ sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = "FIXME"
-copyright = "Remi Gau"
-author = "Remi Gau"
+project = "KrySBAS: Krylov Subspace-Based Adaptive Algorithms"
+copyright = "CCyMA (2024)"
+author = "J. Varela, G. Espínola and J. C. Cabral"
 
 # The full version, including alpha/beta/rc tags
 release = "v0.1.0"
@@ -72,11 +72,11 @@ html_theme = "sphinx_rtd_theme"
 
 # html_logo = '_static/logo.png'
 
-# html_theme_options = {
-#     'collapse_navigation': False,
-#     'display_version': False,
-#     'navigation_depth': 4,
-# }
+html_theme_options = {
+    'collapse_navigation': False,
+    'display_version': False,
+    'navigation_depth': 4,
+}
 
 html_sidebars = {
     "**": [
