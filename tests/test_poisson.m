@@ -264,8 +264,6 @@ function test_poisson_twodim_dir_bc()
     N = -1 * eye(INNODES1D);
     Z = zeros(INNODES1D);
     A = [M N Z; N M N; Z N M];
-    % For INNODES1D > 3, previous line requires an external 'blktridiag' script
-    % A = blktridiag(M, N, N, INNODES1D);
 
     % Right-hand side (RHS) 'b'
     % RHS is composed by the contributions from
@@ -351,9 +349,6 @@ function test_poisson_twodim_left_to_right_flow()
     P = [4 -1 0; -1 4 -1; 0 -1 4];
     Z = zeros(3);
     A = [M N Z; N P N; Z N M];
-    % For INNODES1D > 3, previous line requires the built-in
-    % 'blktridiag' function
-    % A = blktridiag(M, N, N, INNODES1D);
 
     % Right-hand side (RHS) 'b'
     % RHS is composed by the contributions from
