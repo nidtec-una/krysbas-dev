@@ -6,6 +6,8 @@
 
 # KrySBAS: Krylov Subspace-Based Adaptive Solvers
 
+https://github.com/nidtec-una/krysbas-dev/assets/11464732/c434e9d9-00bf-4446-b035-ed605d86dacd
+
 KrySBAS is a free and open-source MATLAB toolbox containing a collection of adaptive solvers based on Krylov subspaces.  
 
 The toolbox is developed by the [Scientific Computing and Applied Mathematics](https://nidtec.pol.una.py/ccyma/) group at the [NIDTEC](https://nidtec.pol.una.py/) research center of the [Polytechnic Faculty, National University of Asunción, Paraguay](https://www.pol.una.py/).
