@@ -1,4 +1,4 @@
-function [H, V, mUpdated] = ...
+function [H, V, s] = ...
     augmented_gram_schmidt_arnoldi(A, v, m, appendV)
     % Modified Gram-Schmidt Arnoldi iteration, with 
     % Krylov subspace augmentation
@@ -12,7 +12,7 @@ function [H, V, mUpdated] = ...
     %   Syntaxis:
     %   ---------
     %
-    %   [H, V, mUpdated] = ...
+    %   [H, V, s] = ...
     %       augmented_gram_schmidt_arnoldi(A, v, m, appendV)
     %
     %   Input parameters:
@@ -40,11 +40,8 @@ function [H, V, mUpdated] = ...
     %   V:          n-by-m matrix
     %               Orthonormal basis of Krylov subspace.
     %
-    %   mUpdated:   int
-    %               Updated value of the restart parameter 'm'. This
-    %               parameter changes only if the last element of H is exactly
-    %               0 and the matrix is trunctated. See, in particular, the
-    %               if-else statement inside the Modified Gram-Schmidt block.
+    %   s:          int
+    %               Size of the new search subspace
     %
     %   References:
     %   -----------
@@ -118,9 +115,6 @@ function [H, V, mUpdated] = ...
     end
 
     % Slice matrix V since we are only interested in the first 'm' columns
-    V = V(:, 1:m);
-
-    % m will remain the same in this case, but we need it in the output
-    mUpdated = m;
+    V = V(:, 1:s);
 
 end

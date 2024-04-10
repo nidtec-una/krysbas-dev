@@ -1,4 +1,4 @@
-function [x, flag, relresvec, mvec, time] = ...
+function [x, flag, relresvec, time] = ...
     lgmres(A, b, m, k, tol, maxit, xInitial, varargin)
     % PD-GMRES Proportional-Derivative GMRES(m)
     %
@@ -172,14 +172,15 @@ function [x, flag, relresvec, mvec, time] = ...
         tol = 1 - eps;
     end
 
-    % ----> Default value for maxit
-    if (nargin < 6) || isempty(maxit)
-        if restarted
-            maxit = min(ceil(n / mInitial), 10);
-        else
-            maxit = min(n, 10);
-        end
-    end
+%     % ----> Default value for maxit
+%     if (nargin < 6) || isempty(maxit)
+%         if restarted
+%             maxit = min(ceil(n / mInitial), 10);
+%         else
+%             maxit = min(n, 10);
+%         end
+%     end
+%    maxit = min(n, 10);
 
     % ----> Default value and sanity checks for initial guess xInitial
     if (nargin < 7) || isempty(xInitial)
@@ -201,9 +202,10 @@ function [x, flag, relresvec, mvec, time] = ...
     clear rowsxInitial colsxInitial;
 
     % ---> LGMRES Algorithm starts here
+    % First outer iteration is a simple restarted GMRES(m) execution
+    % First approximation error vector is created in this stage
 
     % Algorithm setup
-    flag = 0;
     restart = 1;
     r0 = b - A * xInitial;
     res(1, :) = norm(r0);
@@ -218,39 +220,32 @@ function [x, flag, relresvec, mvec, time] = ...
 
     tic(); % start measuring CPU time
 
-    % while flag == 0?
-    while restart <= k && flag == 0
+    % Call MATLAB bult-in gmres.
+    % Ref. [1], pag. 968, recommends GMRES(m+k)
+    % if no enough approximation error vectors are stored yet.
+    [x, flag, ~, ~, resvec] = ...
+        gmres(A, b, m + k, tol, 1, [], [], xInitial);
 
-        % Call MATLAB bult-in gmres.
-        % Ref. [1], pag. 968, recommends GMRES(m+k)
-        % if no enough approximation error vectors are stored yet.
-        [x, flag, ~, ~, resvec] = ...
-            gmres(A, b, m + k, tol, maxit, [], [], xInitial);
+    % Update residual norm, iterations, and relative residual vector
+    res(restart + 1, :) = resvec(end);
+    iter(restart + 1, :) = restart + 1;
+    relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
+    
+    % First approximation error vector
+    zMat(:, restart) = x - xInitial;
 
-        % Update residual norm, iterations, and relative residual vector
-        res(restart + 1, :) = resvec(end);
-        iter(restart + 1, :) = restart + 1;
-        relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
-        
-        % First approximation errors
-        Z(:, restart) = x - xInitial;
-
-        % gmres uses a flag system. We only care wheter the solution has
-        % converged or not
-        if relresvec(size(relresvec, 1) + 1, :) <  tol
-            flag = 1;
-        else
-            xInitial = x;
-            restart = restart + 1;
-        end
-
-        time = toc();
-        return
+    % gmres uses a flag system. We only care wheter the solution has
+    % converged or not
+    if flag == 1 % if flag != 0?
+        flag = 0;
+        xInitial = x;
+        restart = restart + 1;    
     end
 
+    % ---> LGMRES Algorithm for restart > 1 or
     % LGMRES(m, k)
 
-    while flag == 0
+    while flag == 0 && restart <= maxit
 
         % Compute normalized residual vector
         r = b - A * xInitial;
@@ -264,16 +259,18 @@ function [x, flag, relresvec, mvec, time] = ...
         % For LGMRES we must take in consideration that
         % s = m + k is related to the size of 
         % output parameteres H, V
-        [H, V, m] = augmented_gram_schmidt_arnoldi(A, v1, m, Z);
+        [H, V, s] = ...
+            augmented_gram_schmidt_arnoldi ...
+            (A, v1, m + k - min(restart-1, k), zMat(:, min(restart-1, k)));
 
         % Plane rotations
         [HUpTri, g] = plane_rotations(H, beta);
 
         % Solve the least-squares problem
         % s instead of m
-        Rm = HUpTri(1:m, 1:m);
-        gm = g(1:m);
-        minimizer = Rm \ gm; 
+        Rs = HUpTri(1:s, 1:s);
+        gs = g(1:s);
+        minimizer = Rs \ gs; 
         % For LGMRES, we should now consider the approximation error
         % separately as a variable: zName can be zCurrent, zCycle, zCurrentCycle,
         % name open to suggestions
@@ -281,26 +278,33 @@ function [x, flag, relresvec, mvec, time] = ...
         xm = xInitial + zName;
 
         % Update residual norm, iterations, and relative residual vector
-        res(restart + 1, :) = abs(g(m + 1, 1));
+        res(restart + 1, :) = abs(g(s + 1, 1));
         iter(restart + 1, :) = restart + 1;
         relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
 
         % Check convergence
-        if relresvec(end) < tol || size(relresvec, 1) == maxit
+        if relresvec(end) < tol
             % We reached convergence.
             flag = 1;
             x = xm;
-        else
+            time = toc();
+            return
+        elseif restart <= maxit
+
             % We have not reached convergence. Update and restart.
             xInitial = xm;
-            restart = restart + 1;
+            
             % Storage instructions for zName and previous
             % approximation errors 'z' must go here
-            % if k = 1
-            %   Z = zName;
-            % if k > 1 instructions should be like these:
-            %   Z(:, 1:k-1) = Z(:, 2:k)
-            %   Z(:, k) = zName 
+            
+            if restart <= k
+              zMat(:,restart) = zName;
+            else
+              zMat(:, 1:k-1) = zMat(:, 2:k);
+              zMat(:, k) = zName;
+            end
+
+            restart = restart + 1;
         end
 
     end

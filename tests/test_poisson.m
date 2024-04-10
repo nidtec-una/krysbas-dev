@@ -83,9 +83,11 @@ function test_poisson_onedim_dir_bc()
     maxit = 100;
     mInitial = 3;
     uPD_GMRES = pd_gmres(A, b, mInitial, [], [], tol, maxit);
+    uLGMRES = lgmres(A, b, mInitial, 1, 1e-6, 100);
 
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact);
+    assertElementsAlmostEqual(uLGMRES, uExact); 
 
 end
 
