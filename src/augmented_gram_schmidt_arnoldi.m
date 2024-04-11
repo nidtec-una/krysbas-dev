@@ -73,7 +73,7 @@ function [H, V, s] = ...
 
     % Initialize matrices H and W
     [n, ~] = size(A);
-    % For our aougmented Krylov method, we compute the new 'size'
+    % For our augmented Krylov method, we compute the new 'size'
     % of the problem
     k = size(appendV, 2);
     s = m + k;
@@ -87,10 +87,10 @@ function [H, V, s] = ...
     
     % Modified Gram Schmidt-Arnoldi
     for j = 1:s
-        if j<=m
+        if j <= m
             W(:, j) = A * V(:, j);
         else
-            W(:, j) = A * appendV(:, j-m);
+            W(:, j) = A * appendV(:, k-(j-m-1));
         end
 
         for i = 1:j
@@ -102,11 +102,11 @@ function [H, V, s] = ...
         % From here on now, parameter should be 's'
         if H(j + 1, j) == 0
             % We have reached convergence. No need to continue.
-            m = j;
+            s = j;
             % Slice matrices and return outputs.
-            H = H(1:m + 1, 1:m);
-            V = V(:, 1:m);
-            mUpdated = m;
+            H = H(1:s + 1, 1:s);
+            V = V(:, 1:s);
+            %mUpdated = s;
             return
         else
             V(:, j + 1) = W(:, j) / H(j + 1, j);
@@ -114,7 +114,7 @@ function [H, V, s] = ...
 
     end
 
-    % Slice matrix V since we are only interested in the first 'm' columns
+    % Slice matrix V since we are only interested in the first 's' columns
     V = V(:, 1:s);
 
 end

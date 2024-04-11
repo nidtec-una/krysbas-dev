@@ -14,7 +14,7 @@ function [x, flag, relresvec, time] = ...
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relresvec, mvec, time] = ...
+    %   [x, flag, relresvec, time] = ...
     %       lgmres(A, b, m, k, tol, maxit, xInitial)
     %
     %
@@ -220,7 +220,7 @@ function [x, flag, relresvec, time] = ...
 
     tic(); % start measuring CPU time
 
-    % Call MATLAB bult-in gmres.
+    % Call MATLAB built-in gmres.
     % Ref. [1], pag. 968, recommends GMRES(m+k)
     % if no enough approximation error vectors are stored yet.
     [x, flag, ~, ~, resvec] = ...
@@ -283,7 +283,7 @@ function [x, flag, relresvec, time] = ...
         relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
 
         % Check convergence
-        if relresvec(end) < tol
+        if relresvec(restart + 1,1) < tol
             % We reached convergence.
             flag = 1;
             x = xm;
