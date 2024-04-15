@@ -239,7 +239,11 @@ function [x, flag, relresvec, time] = ...
     if flag == 1 % if flag != 0?
         flag = 0;
         xInitial = x;
-        restart = restart + 1;    
+        restart = restart + 1;
+    else
+        flag = 1;
+        time = toc();
+        return
     end
 
     % ---> LGMRES Algorithm for restart > 1 or
