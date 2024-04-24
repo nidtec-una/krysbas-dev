@@ -223,27 +223,26 @@ function test_embree_three_by_three_toy_example()
 end
 
 function test_sherman_one()
-    % Test pd_gmres with sherman1 matrix
+    % Test pd_gmres with sherman4 matrix
 
     % Load A and b
     load('data/sherman1.mat', 'Problem');
     A = Problem.A;
     b = Problem.b;
 
-    % Setup PD-GMRES
-    mInitial = 30;
-    tol = 1e-9;
-    mStep = 3;
+    % Setup LGMRES
+    m = 27;
+    k = 3;
+    tol = 1e-12;
     maxit = 1000;
 
     % Call PD-GMRES
-    [~, flag, ~, mvec, ~] = ...
-            pd_gmres(A, b, mInitial, [], mStep, tol, maxit, [], []);
+    [~, flag, relresvec, ~] = ...
+            lgmres(A, b, m, k, tol, maxit);
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
-    assertEqual(sum(mvec), 955);
-
+    assertEqual(size(relresvec,1), 39);
 end
 
 function test_sherman_four()
@@ -254,18 +253,17 @@ function test_sherman_four()
     A = Problem.A;
     b = Problem.b;
 
-    % Setup PD-GMRES
-    mInitial = 30;
-    tol = 1e-9;
-    mStep = 3;
+    % Setup LGMRES
+    m = 27;
+    k = 3;
+    tol = 1e-12;
     maxit = 1000;
 
     % Call PD-GMRES
-    [~, flag, ~, mvec, ~] = ...
-            pd_gmres(A, b, mInitial, [], mStep, tol, maxit, [], []);
+    [~, flag, relresvec, ~] = ...
+            lgmres(A, b, m, k, tol, maxit);
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
-    assertEqual(sum(mvec), 440);
-
+    assertEqual(size(relresvec,1), 18);
 end
