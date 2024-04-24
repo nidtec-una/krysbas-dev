@@ -1,6 +1,6 @@
 function [H, V, s] = ...
     augmented_gram_schmidt_arnoldi(A, v, m, appendV)
-    % Modified Gram-Schmidt Arnoldi iteration, with 
+    % Modified Gram-Schmidt Arnoldi iteration, with
     % Krylov subspace augmentation
     %
     %   Description:
@@ -28,7 +28,7 @@ function [H, V, s] = ...
     %               Restart parameter.
     %
     %   appendV:    n-by-k matrix
-    %               Matrix of information vectors to append to the 
+    %               Matrix of information vectors to append to the
     %               current Krylov subspace
     %
     %   Output parameters:
@@ -77,20 +77,20 @@ function [H, V, s] = ...
     % of the problem
     k = size(appendV, 2);
     s = m + k;
-    
+
     H = zeros(s + 1, s);
     W = zeros(n, s);  %  W is only used internally by the algorithm
 
     % Construct the V matrix
     V = zeros(n, s + 1);
-    V(:, 1) = v;  % this would be v1 if one follows Ref. [1].  
-    
+    V(:, 1) = v;  % this would be v1 if one follows Ref. [1].
+
     % Modified Gram Schmidt-Arnoldi
     for j = 1:s
         if j <= m
             W(:, j) = A * V(:, j);
         else
-            W(:, j) = A * appendV(:, k-(j-m-1));
+            W(:, j) = A * appendV(:, k - (j - m - 1));
         end
 
         for i = 1:j
@@ -106,7 +106,7 @@ function [H, V, s] = ...
             % Slice matrices and return outputs.
             H = H(1:s + 1, 1:s);
             V = V(:, 1:s);
-            %mUpdated = s;
+            % mUpdated = s;
             return
         else
             V(:, j + 1) = W(:, j) / H(j + 1, j);
