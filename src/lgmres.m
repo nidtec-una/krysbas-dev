@@ -147,15 +147,15 @@ function [x, flag, relresvec, time] = ...
     % if m < k
     %    error("m must be greater than k.");
     % end
-    %  
+    %
     % When the restart parameter is not specified explicitly as an input
-    % argument, lgmres() behaves identically to the 
+    % argument, lgmres() behaves identically to the
     % lgmres(mDefault, kDefault)
-    % with a fixed number of iterations given by 
+    % with a fixed number of iterations given by
     % mDefault = min(n, 10), kDefault = 3.
     %
     % 'restarted' flag does not make sense in the 'lgmres' context
-    %if nargin < 3
+    % if nargin < 3
     %    m = min( n - k, 10 );
     %    k = 3;
 
@@ -172,15 +172,15 @@ function [x, flag, relresvec, time] = ...
         tol = 1 - eps;
     end
 
-%     % ----> Default value for maxit
-%     if (nargin < 6) || isempty(maxit)
-%         if restarted
-%             maxit = min(ceil(n / mInitial), 10);
-%         else
-%             maxit = min(n, 10);
-%         end
-%     end
-%    maxit = min(n, 10);
+    %     % ----> Default value for maxit
+    %     if (nargin < 6) || isempty(maxit)
+    %         if restarted
+    %             maxit = min(ceil(n / mInitial), 10);
+    %         else
+    %             maxit = min(n, 10);
+    %         end
+    %     end
+    %    maxit = min(n, 10);
 
     % ----> Default value and sanity checks for initial guess xInitial
     if (nargin < 7) || isempty(xInitial)
@@ -229,8 +229,7 @@ function [x, flag, relresvec, time] = ...
     % Update residual norm, iterations, and relative residual vector
     res(restart + 1, :) = resvec(end);
     iter(restart + 1, :) = restart + 1;
-    relresvec(size(relresvec, 1) + 1, :) = resvec(end) / res(1, 1); % CAMBIO
-    
+    relresvec(size(relresvec, 1) + 1, :) = resvec(end) / res(1, 1);
     % First approximation error vector
     zMat(:, restart) = x - xInitial;
 
@@ -258,14 +257,15 @@ function [x, flag, relresvec, time] = ...
 
         % Modified Gram-Schmidt Arnoldi iteration
         % Notice that for augmented Krylov subspaces, we need zHistory
-        % where zHistory, a n-by-k matrix, is the history of approximation 
+        % where zHistory, a n-by-k matrix, is the history of approximation
         % error vectors from the last outer iterations
         % For LGMRES we must take in consideration that
-        % s = m + k is related to the size of 
+        % s = m + k is related to the size of
         % output parameteres H, V
         [H, V, s] = ...
             augmented_gram_schmidt_arnoldi ...
-            (A, v1, m + k - min(restart-1, k), zMat(:, 1:min(restart-1, k)));
+            (A, v1, m + k - min(restart - 1, k), ...
+             zMat(:, 1:min(restart - 1, k)));
 
         % Plane rotations
         [HUpTri, g] = plane_rotations(H, beta);
@@ -274,25 +274,27 @@ function [x, flag, relresvec, time] = ...
         % s instead of m
         Rs = HUpTri(1:s, 1:s);
         gs = g(1:s);
-        minimizer = Rs \ gs; 
+        minimizer = Rs \ gs;
         % For LGMRES, we should now consider the approximation error
-        % separately as a variable: zName can be zCurrent, zCycle, zCurrentCycle,
-        % name open to suggestions
+        % separately as a variable: zName can be zCurrent,
+        % zCycle, zCurrentCycle, name is open to suggestions
 
         W = zeros(n, s);
-        W(:, 1:m + k - min(restart-1, k)) = V(:, 1:m + k - min(restart-1, k));
-        W(:, m + k - min(restart-1, k)+1:s) = ...
-            fliplr(zMat(:, 1:min(restart-1, k)));
+        W(:, 1:m + k - min(restart - 1, k)) = ...
+            V(:, 1:m + k - min(restart - 1, k));
+        W(:, m + k - min(restart - 1, k) + 1:s) = ...
+            fliplr(zMat(:, 1:min(restart - 1, k)));
         zName = W * minimizer;
         xm = xInitial + zName;
 
         % Update residual norm, iterations, and relative residual vector
         res(restart + 1, :) = abs(g(s + 1, 1));
         iter(restart + 1, :) = restart + 1;
-        relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
+        relresvec(size(relresvec, 1) + 1, :) = ...
+            res(restart + 1, :) / res(1, 1);
 
         % Check convergence
-        if relresvec(restart + 1,1) < tol
+        if relresvec(restart + 1, 1) < tol
             % We reached convergence.
             flag = 1;
             x = xm;
@@ -302,15 +304,15 @@ function [x, flag, relresvec, time] = ...
 
             % We have not reached convergence. Update and restart.
             xInitial = xm;
-            
+
             % Storage instructions for zName and previous
             % approximation errors 'z' must go here
-            
+
             if restart <= k
-              zMat(:,restart) = zName;
+                zMat(:, restart) = zName;
             else
-              zMat(:, 1:k-1) = zMat(:, 2:k);
-              zMat(:, k) = zName;
+                zMat(:, 1:k - 1) = zMat(:, 2:k);
+                zMat(:, k) = zName;
             end
 
             restart = restart + 1;

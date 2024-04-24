@@ -143,10 +143,10 @@ function test_outputs_unrestarted_identity_matrix() % Linear system # 1
     A = eye(n);
     b = ones(n, 1);
     xInitial = zeros(n, 1);
-    
+
     % Call LGMRES
     [x, flag, relresvec, time] = lgmres(A, b, 27, 3, 1e-6, 100, xInitial);
-    
+
     % Compare with expected outputs
     assertElementsAlmostEqual(x, ones(n, 1));
     assert(flag == 1);
@@ -164,10 +164,10 @@ function test_outputs_restarted_identity_matrix() % Linear system # 2
     A = eye(n);
     b = [2; 3; 4];
     xInitial = zeros(n, 1);
-    
+
     % Call LGMRES
     [x, flag, relresvec, time] = lgmres(A, b, 2, 1, 1e-6, 100, xInitial);
-    
+
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [2; 3; 4]);
     assert(flag == 1);
@@ -242,7 +242,7 @@ function test_sherman_one()
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
-    assertEqual(size(relresvec,1), 39);
+    assertEqual(size(relresvec, 1), 39);
 end
 
 function test_sherman_four()
@@ -265,5 +265,5 @@ function test_sherman_four()
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
-    assertEqual(size(relresvec,1), 18);
+    assertEqual(size(relresvec, 1), 18);
 end

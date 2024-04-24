@@ -83,7 +83,7 @@ function test_poisson_onedim_dir_bc()
     maxit = 100;
     mInitial = 3;
     uPD_GMRES = pd_gmres(A, b, mInitial, [], [], tol, maxit);
-    
+
     % LGMRES
     tol = 1e-9;
     maxit = 100;
@@ -93,7 +93,7 @@ function test_poisson_onedim_dir_bc()
 
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact);
-    assertElementsAlmostEqual(uLGMRES, uExact); 
+    assertElementsAlmostEqual(uLGMRES, uExact);
 
 end
 
@@ -166,7 +166,7 @@ function test_poisson_onedim_dir_neu_bc()
 
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact);
-    assertElementsAlmostEqual(uLGMRES, uExact); 
+    assertElementsAlmostEqual(uLGMRES, uExact);
 
 end
 
@@ -244,7 +244,7 @@ function test_poisson_onedim_robin_bc()
 
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact);
-    assertElementsAlmostEqual(uLGMRES, uExact); 
+    assertElementsAlmostEqual(uLGMRES, uExact);
 
 end
 
@@ -329,7 +329,7 @@ function test_poisson_twodim_dir_bc()
 
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact);
-    assertElementsAlmostEqual(uLGMRES, uExact); 
+    assertElementsAlmostEqual(uLGMRES, uExact);
 
 end
 
@@ -419,5 +419,5 @@ function test_poisson_twodim_left_to_right_flow()
 
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact);
-    assertElementsAlmostEqual(uLGMRES, uExact); 
+    assertElementsAlmostEqual(uLGMRES, uExact);
 end
