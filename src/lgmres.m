@@ -229,7 +229,7 @@ function [x, flag, relresvec, time] = ...
     % Update residual norm, iterations, and relative residual vector
     res(restart + 1, :) = resvec(end);
     iter(restart + 1, :) = restart + 1;
-    relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
+    relresvec(size(relresvec, 1) + 1, :) = resvec(end) / res(1, 1); % CAMBIO
     
     % First approximation error vector
     zMat(:, restart) = x - xInitial;
@@ -265,7 +265,7 @@ function [x, flag, relresvec, time] = ...
         % output parameteres H, V
         [H, V, s] = ...
             augmented_gram_schmidt_arnoldi ...
-            (A, v1, m + k - min(restart-1, k), zMat(:, min(restart-1, k)));
+            (A, v1, m + k - min(restart-1, k), zMat(:, 1:min(restart-1, k)));
 
         % Plane rotations
         [HUpTri, g] = plane_rotations(H, beta);
@@ -278,7 +278,12 @@ function [x, flag, relresvec, time] = ...
         % For LGMRES, we should now consider the approximation error
         % separately as a variable: zName can be zCurrent, zCycle, zCurrentCycle,
         % name open to suggestions
-        zName = V * minimizer;
+
+        W = zeros(n, s);
+        W(:, 1:m + k - min(restart-1, k)) = V(:, 1:m + k - min(restart-1, k));
+        W(:, m + k - min(restart-1, k)+1:s) = ...
+            fliplr(zMat(:, 1:min(restart-1, k)));
+        zName = W * minimizer;
         xm = xInitial + zName;
 
         % Update residual norm, iterations, and relative residual vector
