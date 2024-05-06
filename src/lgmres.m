@@ -1,11 +1,11 @@
 function [x, flag, relresvec, time] = ...
     lgmres(A, b, m, k, tol, maxit, xInitial, varargin)
-    % PD-GMRES Proportional-Derivative GMRES(m)
+    % LGMRES algorithm
     %
     %   LGMRES ("Loose GMRES") is a modified implementation of the restarted
     %   Generalized Minimal Residual Error or GMRES(m) [1], performed by
     %   appending 'k' error approximation vectors to the restarting Krylov
-    %   subspace, as a way to preserve informations from previous
+    %   subspace, as a way to preserve information from previous
     %   discarted search subspaces from previous iterations of the method.
     %
     %   Augments the standard GMRES approximation space with approximations
@@ -33,7 +33,7 @@ function [x, flag, relresvec, time] = ...
     %   k:          int
     %               Number of error approximation vectors to be appended
     %               to the Krylov search subspace. Ref. [1] recommends values
-    %               in the range of 1...3.
+    %               1, 2 or 3.
     %
     %   tol:        float, optional
     %               Tolerance error threshold for the relative residual norm.
@@ -49,7 +49,7 @@ function [x, flag, relresvec, time] = ...
     %   ------------------
     %
     %   x:          n-by-1 vector
-    %               Approximate solution of the linear system.
+    %               Approximate solution to the linear system.
     %
     %   flag:       boolean
     %               1 if the algorithm has converged, 0 otherwise.
@@ -72,11 +72,6 @@ function [x, flag, relresvec, time] = ...
     %   [1] Baker, A. H., Jessup, E. R., & Manteuffel, T. (2005). A technique
     %   for accelerating the convergence of restarted GMRES. SIAM Journal on
     %   Matrix Analysis and Applications, 26(4), 962-984.
-    %
-    %   [2] Nunez, R. C., Schaerer, C. E., & Bhaya, A. (2018). A
-    %   proportional-derivative control strategy for restarting the GMRES(m)
-    %   algorithm. Journal of Computational and Applied Mathematics,
-    %   337, 209-224.
     %
     %   Copyright:
     %   ----------
@@ -142,22 +137,7 @@ function [x, flag, relresvec, time] = ...
 
     % ----> We should evaluate special sanity checks for LGMRES here
     % ----> Default values and sanity checks for parameters m, k
-    %
-    % EXAMPLE
-    % if m < k
-    %    error("m must be greater than k.");
-    % end
-    %
-    % When the restart parameter is not specified explicitly as an input
-    % argument, lgmres() behaves identically to the
-    % lgmres(mDefault, kDefault)
-    % with a fixed number of iterations given by
-    % mDefault = min(n, 10), kDefault = 3.
-    %
-    % 'restarted' flag does not make sense in the 'lgmres' context
-    % if nargin < 3
-    %    m = min( n - k, 10 );
-    %    k = 3;
+    % ----> TO BE DISCUSSED
 
     % ----> Default value and sanity checks for tol
     if (nargin < 5) || isempty(tol)
@@ -171,16 +151,6 @@ function [x, flag, relresvec, time] = ...
         warning("Tolerance is too large and it will be changed to 1-eps.");
         tol = 1 - eps;
     end
-
-    %     % ----> Default value for maxit
-    %     if (nargin < 6) || isempty(maxit)
-    %         if restarted
-    %             maxit = min(ceil(n / mInitial), 10);
-    %         else
-    %             maxit = min(n, 10);
-    %         end
-    %     end
-    %    maxit = min(n, 10);
 
     % ----> Default value and sanity checks for initial guess xInitial
     if (nargin < 7) || isempty(xInitial)
@@ -215,15 +185,14 @@ function [x, flag, relresvec, time] = ...
     % Matrix with the history of approximation error vectors
     zMat = zeros(n, k);
 
-    % while number_of_cycles <=k, according to 'mi_lgmres',
-    % We execute GMRES(m+k) only
+    % while number_of_cycles <=k, we run GMRES(m + k) only
 
     tic(); % start measuring CPU time
 
     % Call MATLAB built-in gmres.
-    % Ref. [1], pag. 968, recommends GMRES(m+k)
+    % Ref. [1], pag. 968, recommends GMRES(m + k)
     % if no enough approximation error vectors are stored yet.
-    [x, flag, ~, ~, resvec] = ...
+    [x, gmres_flag, ~, ~, resvec] = ...
         gmres(A, b, m + k, tol, 1, [], [], xInitial);
 
     % Update residual norm, iterations, and relative residual vector
@@ -233,9 +202,9 @@ function [x, flag, relresvec, time] = ...
     % First approximation error vector
     zMat(:, restart) = x - xInitial;
 
-    % gmres uses a flag system. We only care wheter the solution has
+    % gmres uses a flag system. We only care whether the solution has
     % converged or not
-    if flag == 1 % if flag != 0?
+    if gmres_flag ~= 0 %f gmres did not converge
         flag = 0;
         xInitial = x;
         restart = restart + 1;
@@ -271,21 +240,22 @@ function [x, flag, relresvec, time] = ...
         [HUpTri, g] = plane_rotations(H, beta);
 
         % Solve the least-squares problem
-        % s instead of m
         Rs = HUpTri(1:s, 1:s);
         gs = g(1:s);
         minimizer = Rs \ gs;
-        % For LGMRES, we should now consider the approximation error
-        % separately as a variable: zName can be zCurrent,
-        % zCycle, zCurrentCycle, name is open to suggestions
 
+        % From [1], fig. 1, lines 10 and 12, the n-by-s matrix W
+        % is created with the first m Arnoldi vectors and the
+        % k approximation error vectos, from newest to oldest,
+        % zCurrentCycle is the approximation error vector from
+        % the current outer iteration
         W = zeros(n, s);
         W(:, 1:m + k - min(restart - 1, k)) = ...
             V(:, 1:m + k - min(restart - 1, k));
         W(:, m + k - min(restart - 1, k) + 1:s) = ...
             fliplr(zMat(:, 1:min(restart - 1, k)));
-        zName = W * minimizer;
-        xm = xInitial + zName;
+        zCurrentCycle = W * minimizer;
+        xm = xInitial + zCurrentCycle;
 
         % Update residual norm, iterations, and relative residual vector
         res(restart + 1, :) = abs(g(s + 1, 1));
@@ -305,14 +275,12 @@ function [x, flag, relresvec, time] = ...
             % We have not reached convergence. Update and restart.
             xInitial = xm;
 
-            % Storage instructions for zName and previous
-            % approximation errors 'z' must go here
-
+            % Storage of approximation error vector
             if restart <= k
-                zMat(:, restart) = zName;
+                zMat(:, restart) = zCurrentCycle;
             else
                 zMat(:, 1:k - 1) = zMat(:, 2:k);
-                zMat(:, k) = zName;
+                zMat(:, k) = zCurrentCycle;
             end
 
             restart = restart + 1;

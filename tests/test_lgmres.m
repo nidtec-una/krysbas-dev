@@ -39,7 +39,7 @@ function test_number_of_input_arguments()
     % Test if error is raised when passing incorrect number of inputs.
     % Error should be raised since 1 parameter is given
     try
-        pd_gmres(ones(2, 2));
+        lgmres(ones(2, 2));
     catch ME
         msg = "Too few input parameters. Expected at least A and b.";
         assert(matches(ME.message, msg));
@@ -178,52 +178,30 @@ end
 
 function test_embree_three_by_three_toy_example()
     % Test Embree's 3x3 linear system from https://www.jstor.org/stable/25054403
-    % with PD-GMRES. We construct two checks, one with mInitial = 1, and
-    % one with mInitial = 2. Note that the gmres(m) algorithm with m = 2,
-    % does not converge (this was proven by Embree in his paper). This, however,
-    % does not occur with the PD-GMRES, which adaptively changes the value
-    % of m to avoid stagnation.
 
     % Load A and b
     load('data/embree3.mat', 'Problem');
     A = Problem.A;
     b = Problem.b;
 
-    % Setup PD-GMRES
-    mInitials = [1; 2];
-    tol = 1e-9;
-    maxit = 20;
+    % Setup LGMRES
+    m = 2;
+    k = 1;
+    tol = 1e-6;
+    maxit = 100;
 
-    % Loop over the values of mInitials, i.e., {1, 2}.
-    for i = 1:length(mInitials)
-        % Call PD-GMRES
-        [x, flag, relresvec, mvec, ~] = ...
-            pd_gmres(A, b, mInitials(i), [], [], tol, maxit, [], []);
+    % Call LGMRES
+    [x, flag, ~, ~] = ...
+        lgmres(A, b, m, k, tol, maxit);
 
-        % Compare with expected outputs
-        assertElementsAlmostEqual(x, [8; -7; 1]);
-        assertEqual(flag, 1);
-        if mInitials(i) == 1
-            relresvecExpected = [1.000000000000000
-                                 0.925820099772551
-                                 0.654653670707977
-                                 0];
-            mvecExpected = [1; 1; 1; 2];
-        else
-            relresvecExpected = [1.000000000000000
-                                 0.462910049886276
-                                 0.377189160453301
-                                 0.000000000000001];
-            mvecExpected = [2; 2; 2; 3];
-        end
-        assertElementsAlmostEqual(relresvec, relresvecExpected);
-        assertEqual(mvec, mvecExpected);
-    end
+    % Compare with expected outputs
+    assertElementsAlmostEqual(x, [8; -7; 1]);
+    assertEqual(flag, 1);
 
 end
 
 function test_sherman_one()
-    % Test pd_gmres with sherman4 matrix
+    % Test lgmres with sherman1 matrix
 
     % Load A and b
     load('data/sherman1.mat', 'Problem');
@@ -236,7 +214,7 @@ function test_sherman_one()
     tol = 1e-12;
     maxit = 1000;
 
-    % Call PD-GMRES
+    % Call LGMRES
     [~, flag, relresvec, ~] = ...
             lgmres(A, b, m, k, tol, maxit);
 
@@ -246,7 +224,7 @@ function test_sherman_one()
 end
 
 function test_sherman_four()
-    % Test pd_gmres with sherman4 matrix
+    % Test lgmres with sherman4 matrix
 
     % Load A and b
     load('data/sherman4.mat', 'Problem');
@@ -259,7 +237,7 @@ function test_sherman_four()
     tol = 1e-12;
     maxit = 1000;
 
-    % Call PD-GMRES
+    % Call LGMRES
     [~, flag, relresvec, ~] = ...
             lgmres(A, b, m, k, tol, maxit);
 

@@ -106,7 +106,6 @@ function [H, V, s] = ...
             % Slice matrices and return outputs.
             H = H(1:s + 1, 1:s);
             V = V(:, 1:s);
-            % mUpdated = s;
             return
         else
             V(:, j + 1) = W(:, j) / H(j + 1, j);
