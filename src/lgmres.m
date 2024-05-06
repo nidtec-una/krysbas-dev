@@ -204,7 +204,7 @@ function [x, flag, relresvec, time] = ...
 
     % gmres uses a flag system. We only care whether the solution has
     % converged or not
-    if gmres_flag ~= 0 %f gmres did not converge
+    if gmres_flag ~= 0 % if gmres did not converge
         flag = 0;
         xInitial = x;
         restart = restart + 1;
