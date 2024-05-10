@@ -101,7 +101,60 @@ function test_size_compatibility_between_A_and_b()
     end
 end
 
-% Here we write tests for m and k
+function test_default_value_of_m()
+    % Test if default value of m is set to min(n, 10) 
+    % and full GMREs is run when input parameters are A and B only
+
+    A = eye(3);
+    b = ones(3, 1);
+    
+    [x, flag, ~, ~] = lgmres(A, b);
+
+    assertElementsAlmostEqual(x, ones(3, 1));
+    assert(flag == 1);
+end
+
+function test_m_greater_than_size_of_A()
+    % Test if error is raised when m > size(A, 1)
+    
+    A = eye(3);
+    b = ones(3, 1);
+
+    try
+        lgmres(A, b, 4);
+    catch ME
+        msg = "m must satisfy: 1 <= m <= n.";
+        assert(matches(ME.message, msg));
+    end    
+end
+
+function test_full_gmres_when_m_equals_size_of_A()
+    % Test if built-in unrestarted GMRES is set
+    % when m == size(A, 1)
+
+    A = eye(3);
+    b = ones(3, 1);
+    
+    x1 = gmres(A, b);
+    [x2, flag, ~, ~] = lgmres(A, b, 3, 0);
+
+    assertElementsAlmostEqual(x1, x2);
+    assert(flag == 1);
+end
+
+function test_restarted_gmres_when_m_is_less_than_size_of_A()
+    % Test if built-in restarted GMREs is set
+    % when m < size(A, 1)
+    A = eye(3);
+    b = ones(3, 1);
+
+    x1 = gmres(A, b, 2);
+    [x2, flag, ~, ~] = lgmres(A, b, 2, 0);
+
+    assertElementsAlmostEqual(x1, x2);
+    assert(flag == 1);
+end
+    
 
 function test_vector_xInitial_not_column_vector()
     % Test if error is raised when xInitial is not a column vector
