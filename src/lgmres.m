@@ -32,8 +32,8 @@ function [x, flag, relresvec, time] = ...
     %
     %   k:          int
     %               Number of error approximation vectors to be appended
-    %               to the Krylov search subspace. Ref. [1] recommends values
-    %               1, 2 or 3.
+    %               to the Krylov search subspace. Default is 3, but values
+    %               between 1 and 5 are mostly used.
     %
     %   tol:        float, optional
     %               Tolerance error threshold for the relative residual norm.
@@ -135,9 +135,52 @@ function [x, flag, relresvec, time] = ...
 
     clear rowsb colsb;
 
-    % ----> We should evaluate special sanity checks for LGMRES here
-    % ----> Default values and sanity checks for parameters m, k
-    % ----> TO BE DISCUSSED
+    % ----> Special sanity checks for LGMRES here
+
+    % ----> Default value and sanityu checks for m
+    if (nargin < 3) || isempty(m)
+        m = min(n, 10);
+    end
+
+    % ----> If m > n, error message is printed
+    if (m > n)
+        error("m must satisfy: 1 <= m <= n.");
+    end
+
+    % ----> NEW If m == n, built-in unrestarted gmres will be used
+    if (m == n)
+        warning("Full GMRES will be used.");
+        tic();
+        [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b);
+        time = toc();
+        x = gmres_x;
+        if gmres_flag == 0
+            flag = 1;
+        else
+            flag = 0;
+        end
+        relresvec = resvec ./ resvec(1, 1);
+        return
+    end
+
+    % ----> If m < n AND k == 0, built-in gmres(m) will be used
+    if (m < n) && (k == 0)
+        warning("GMRES(m) will be used.")
+        [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b, m);
+        x = gmres_x;
+        if gmres_flag == 0
+            flag = 1;
+        else
+            flag = 0;
+        end
+        relresvec = resvec ./ resvec(1, 1);
+        return
+    end
+
+    % ----> NEW Default value and sanityu checks for k
+    if (nargin < 4) || isempty(k)
+        k = 3;
+    end
 
     % ----> Default value and sanity checks for tol
     if (nargin < 5) || isempty(tol)
@@ -150,6 +193,11 @@ function [x, flag, relresvec, time] = ...
     elseif tol >= 1
         warning("Tolerance is too large and it will be changed to 1-eps.");
         tol = 1 - eps;
+    end
+
+    % ----> NEW Default value for maxit
+    if (nargin < 6) || isempty(maxit)
+        maxit = min(n, 10);
     end
 
     % ----> Default value and sanity checks for initial guess xInitial
