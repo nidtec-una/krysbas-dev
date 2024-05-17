@@ -135,7 +135,7 @@ function [x, flag, relresvec, time] = ...
 
     clear rowsb colsb;
 
-    % ----> Special sanity checks for LGMRES here
+    % Special sanity checks for LGMRES here
 
     % ----> Default value and sanityu checks for m
     if (nargin < 3) || isempty(m)
@@ -143,12 +143,12 @@ function [x, flag, relresvec, time] = ...
     end
 
     % ----> If m > n, error message is printed
-    if (m > n)
+    if m > n
         error("m must satisfy: 1 <= m <= n.");
     end
 
-    % ----> NEW If m == n, built-in unrestarted gmres will be used
-    if (m == n)
+    % ----> If m == n, built-in unrestarted gmres will be used
+    if m == n
         warning("Full GMRES will be used.");
         tic();
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b);
@@ -165,7 +165,7 @@ function [x, flag, relresvec, time] = ...
 
     % ----> If m < n AND k == 0, built-in gmres(m) will be used
     if (m < n) && (k == 0)
-        warning("GMRES(m) will be used.")
+        warning("GMRES(m) will be used.");
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b, m);
         x = gmres_x;
         if gmres_flag == 0
@@ -177,12 +177,12 @@ function [x, flag, relresvec, time] = ...
         return
     end
 
-    % ----> NEW Default value and sanityu checks for k
+    % ----> Default value and sanity checks for k
     if (nargin < 4) || isempty(k)
         k = 3;
     end
 
-    % ----> Default value and sanity checks for tol
+    % Default value and sanity checks for tol
     if (nargin < 5) || isempty(tol)
         tol = 1e-6;
     end
@@ -195,7 +195,7 @@ function [x, flag, relresvec, time] = ...
         tol = 1 - eps;
     end
 
-    % ----> NEW Default value for maxit
+    % ----> Default value for maxit
     if (nargin < 6) || isempty(maxit)
         maxit = min(n, 10);
     end
