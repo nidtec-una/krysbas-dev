@@ -136,10 +136,12 @@ function test_full_gmres_when_m_equals_size_of_A()
     b = ones(3, 1);
 
     x1 = gmres(A, b);
-    [x2, flag, ~, time] = lgmres(A, b, 3, 0);
+    [x2, flag, relresvec, time] = lgmres(A, b, 3, 0);
 
     assertElementsAlmostEqual(x1, x2);
     assert(flag == 1);
+    assertElementsAlmostEqual(relresvec, [1; 0]);
+    assert(time > 0 && time < 5);
 end
 
 function test_restarted_gmres_when_m_is_less_than_size_of_A()
@@ -149,10 +151,12 @@ function test_restarted_gmres_when_m_is_less_than_size_of_A()
     b = ones(3, 1);
 
     x1 = gmres(A, b, 2);
-    [x2, flag, ~, time] = lgmres(A, b, 2, 0);
+    [x2, flag, relresvec, time] = lgmres(A, b, 2, 0);
 
     assertElementsAlmostEqual(x1, x2);
     assert(flag == 1);
+    assertElementsAlmostEqual(relresvec, [1; 0]);
+    assert(time > 0 && time < 5);
 end
 
 function test_vector_xInitial_not_column_vector()
