@@ -149,9 +149,24 @@ function test_poisson_onedim_dir_neu_bc()
     mInitial = 3;
     uPD_GMRES = pd_gmres(A, b, mInitial, [], [], tol, maxit);
 
+    % LGMRES
+    tol = 1e-9;
+    maxit = 100;
+    m = 3;
+    k = 1;
+    uLGMRES = lgmres(A, b, m, k, tol, maxit);
+
+    % GMRES-E
+    tol = 1e-9;
+    maxit = 100;
+    m = 3;
+    k = 1;
+    uGMRESE = gmres_e(A, b, m, k, tol, maxit);
+
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact);
-
+    assertElementsAlmostEqual(uLGMRES, uExact);
+    assertElementsAlmostEqual(uGMRESE, uExact);
 end
 
 function test_poisson_onedim_robin_bc()
@@ -219,8 +234,24 @@ function test_poisson_onedim_robin_bc()
     mInitial = 3;
     uPD_GMRES = pd_gmres(A, b, mInitial, [], [], tol, maxit);
 
+    % LGMRES
+    tol = 1e-9;
+    maxit = 100;
+    m = 3;
+    k = 1;
+    uLGMRES = lgmres(A, b, m, k, tol, maxit);
+
+    % GMRES-E
+    tol = 1e-9;
+    maxit = 100;
+    m = 3;
+    k = 1;
+    uGMRESE = gmres_e(A, b, m, k, tol, maxit);
+
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact);
+    assertElementsAlmostEqual(uLGMRES, uExact);
+    assertElementsAlmostEqual(uGMRESE, uExact);
 
 end
 
@@ -296,8 +327,24 @@ function test_poisson_twodim_dir_bc()
     mInitial = 3;
     uPD_GMRES = pd_gmres(A, b, mInitial, [], [], tol, maxit);
 
+    % LGMRES
+    tol = 1e-9;
+    maxit = 100;
+    m = 3;
+    k = 1;
+    uLGMRES = lgmres(A, b, m, k, tol, maxit);
+
+    % GMRES-E
+    tol = 1e-9;
+    maxit = 100;
+    m = 3;
+    k = 1;
+    uGMRESE = gmres_e(A, b, m, k, tol, maxit);
+
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact);
+    assertElementsAlmostEqual(uLGMRES, uExact);
+    assertElementsAlmostEqual(uGMRESE, uExact);
 
 end
 
@@ -378,6 +425,22 @@ function test_poisson_twodim_left_to_right_flow()
     mInitial = 3;
     uPD_GMRES = pd_gmres(A, b, mInitial, [], [], tol, maxit);
 
+    % LGMRES
+    tol = 1e-9;
+    maxit = 100;
+    m = 3;
+    k = 1;
+    uLGMRES = lgmres(A, b, m, k, tol, maxit);
+
+    % GMRES-E
+    tol = 1e-9;
+    maxit = 100;
+    m = 3;
+    k = 1;
+    uGMRESE = gmres_e(A, b, m, k, tol, maxit);
+
     % Assert whether the pd_gmres solution match the exact knonw solution
     assertElementsAlmostEqual(uPD_GMRES, uExact);
+    assertElementsAlmostEqual(uLGMRES, uExact);
+    assertElementsAlmostEqual(uGMRESE, uExact);
 end
