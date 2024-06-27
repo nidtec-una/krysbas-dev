@@ -68,9 +68,9 @@ jobs:
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       # no coverage on windows as long as MOcov does not support it
       # see https://github.com/MOcov/MOcov/issues/28
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: coverage.xml   # optional
         flags: ${{ matrix.os }}_matlab-${{ matrix.version }}
         name: codecov-umbrella   # optional
-        fail_ci_if_error: true   # optional (default = false)
+        fail_ci_if_error: false   # optional (default = false)
