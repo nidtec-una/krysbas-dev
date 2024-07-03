@@ -160,7 +160,9 @@ function [x, flag, relresvec, time] = ...
     % ----> If m < n AND k == 0, built-in gmres(m) will be used
     if (m < n) && (k == 0)
         warning("GMRES(m) will be used.");
+        tic();
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b, m);
+        time = toc();
         x = gmres_x;
         if gmres_flag == 0
             flag = 1;
@@ -253,7 +255,7 @@ function [x, flag, relresvec, time] = ...
         % We reached convergence.
         flag = 1;
         x = xm;
-        time = toc();
+            time = toc();
         return
     else
         % We have not reached convergence.
