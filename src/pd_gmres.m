@@ -308,7 +308,8 @@ function [x, flag, relresvec, mvec, time] = ...
 
     tic();  % start measuring CPU time
 
-    while flag == 0
+    %while flag == 0
+    while restart <= maxit 
 
         % Control block
         if iter(size(iter, 1), :) ~= 1
@@ -345,10 +346,13 @@ function [x, flag, relresvec, mvec, time] = ...
         relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
 
         % Check convergence
-        if relresvec(end) < tol || size(relresvec, 1) == maxit
+        %if relresvec(end) < tol || size(relresvec, 1) == maxit
+        if relresvec(end) < tol 
             % We reached convergence.
             flag = 1;
             x = xm;
+            time = toc();
+            return
         else
             % We have not reached convergence. Update and restart.
             xInitial = xm;
@@ -356,7 +360,7 @@ function [x, flag, relresvec, mvec, time] = ...
         end
 
     end
-
+    x=xm; 
     time = toc();
 
 end
