@@ -91,7 +91,6 @@ function [H, V, s] = ...
             W(:, j) = A * V(:, j);
         else
             W(:, j) = A * appendV(:, k - (j - m - 1));
-            % W(:, j) = A * appendV(:,j - m);
         end
 
         for i = 1:j
