@@ -150,7 +150,7 @@ function test_restarted_gmres_when_m_is_less_than_size_of_A()
     A = eye(3);
     b = ones(3, 1);
 
-    x1 = gmres(A, b, 2); warning("aaaaaaaaaaaaa");
+    x1 = gmres(A, b, 2);
     [x2, flag, relresvec, time] = gmres_e(A, b, 2, 0);
 
     assertElementsAlmostEqual(x1, x2);

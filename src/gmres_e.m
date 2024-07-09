@@ -255,7 +255,7 @@ function [x, flag, relresvec, time] = ...
         % We reached convergence.
         flag = 1;
         x = xm;
-            time = toc();
+        time = toc();
         return
     else
         % We have not reached convergence.
