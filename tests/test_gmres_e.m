@@ -194,7 +194,7 @@ function test_outputs_unrestarted_identity_matrix() % Linear system # 1
     % Test whether the correct outputs are returned using an identity
     % matrix when the unrestarted algorithm is called
 
-   % Setup a trivial linear system
+    % Setup a trivial linear system
     A = eye(3);
     b = ones(3, 1);
 
@@ -218,7 +218,7 @@ function test_outputs_restarted_identity_matrix() % Linear system # 2
     b = [2; 3; 4];
 
     % Setup GMRES-E
-    % TODO: This does not for m = 2 (See Issue #68 on GH)
+    % BUG: This does not for m = 2 (See Issue #68 on GH)
     m = 1;
     k = 1;
     tol = 1e-9;
@@ -250,8 +250,7 @@ function test_embree_three_by_three_toy_example()
     maxit = 100;
 
     % Call GMRES-E
-    [x, flag, ~, time] = ...
-        gmres_e(A, b, m, k, tol, maxit);
+    [x, flag, ~, time] = gmres_e(A, b, m, k, tol, maxit);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [8; -7; 1]);
@@ -274,8 +273,7 @@ function test_sherman_one()
     maxit = 1000;
 
     % Call GMRES-E
-    [~, flag, relresvec, time] = ...
-            gmres_e(A, b, m, k, tol, maxit);
+    [~, flag, relresvec, time] = gmres_e(A, b, m, k, tol, maxit);
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
@@ -298,12 +296,10 @@ function test_sherman_four()
     maxit = 1000;
 
     % Call GMRES-E
-    [~, flag, relresvec, time] = ...
-            gmres_e(A, b, m, k, tol, maxit);
+    [~, flag, relresvec, time] = gmres_e(A, b, m, k, tol, maxit);
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
     assertEqual(size(relresvec, 1), 10);
     assert(time > 0 && time < 100);
 end
-
