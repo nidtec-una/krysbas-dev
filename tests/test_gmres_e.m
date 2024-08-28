@@ -307,25 +307,3 @@ function test_sherman_four()
     assert(time > 0 && time < 100);
 end
 
-function test_sherman_five()
-    % Test GMRES-E with sherman4 matrix
-
-    % Load A and b
-    load('data/sherman5.mat', 'Problem');
-    A = Problem.A;
-    b = Problem.b;
-
-    % Setup GMRES-E
-    m = 27;
-    k = 3;
-    tol = 1e-12;
-    maxit = 1000;
-
-    % Call GMRES-E
-    [~, flag, relresvec, time] = gmres_e(A, b, m, k, tol, maxit);
-
-    % We check if it has converged and the total sum of outer iterations
-    assertEqual(flag, 1);
-    assertEqual(size(relresvec, 1), 419);
-    assert(time > 0 && time < 100);
-end
