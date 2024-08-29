@@ -139,7 +139,7 @@ function test_full_gmres_when_m_equals_size_of_A()
     [x2, flag, relresvec, kdvec, time] = lgmres(A, b, 3, 0);
 
     assertElementsAlmostEqual(x1, x2);
-    assertEqual(kdvec, [3; 3])
+    assertEqual(kdvec, [3; 3]);
     assert(flag == 1);
     assertElementsAlmostEqual(relresvec, [1; 0]);
     assert(time > 0 && time < 5);
@@ -210,7 +210,7 @@ function test_outputs_unrestarted_identity_matrix() % Linear system # 1
     % Compare with expected outputs
     assertElementsAlmostEqual(x, ones(n, 1));
     assert(flag == 1);
-    assertEqual(kdvec, [m+l; m+l]);
+    assertEqual(kdvec, [m + l; m + l]);
     assertElementsAlmostEqual(relresvec, [1; 0]);
     assert(time > 0 && time < 5);
 end
