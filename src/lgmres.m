@@ -14,8 +14,7 @@ function [x, flag, relresvec, time] = ...
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relresvec, time] = ...
-    %       lgmres(A, b, m, k, tol, maxit, xInitial)
+    %   [x, flag, relresvec, time] = lgmres(A, b, m, k, tol, maxit, xInitial)
     %
     %
     %   Input Parameters:
@@ -29,11 +28,14 @@ function [x, flag, relresvec, time] = ...
     %
     %   m:          int
     %               Restart parameter (similar to 'restart' in MATLAB).
+    %               Default is min(n, 10).
+    %               If m == n, built-in unrestarted gmres will be used.
     %
     %   k:          int
     %               Number of error approximation vectors to be appended
     %               to the Krylov search subspace. Default is 3, but values
     %               between 1 and 5 are mostly used.
+    %               If m < n AND k == 0, built-in gmres(m) will be used.
     %
     %   tol:        float, optional
     %               Tolerance error threshold for the relative residual norm.
@@ -41,6 +43,7 @@ function [x, flag, relresvec, time] = ...
     %
     %   maxit:      int, optional
     %               Maximum number of outer iterations.
+    %               Default is min(m, 10).
     %
     %   xInitial:   n-by-1 vector, optional
     %               Vector of initial guess. Default is zeros(n, 1).
@@ -54,7 +57,7 @@ function [x, flag, relresvec, time] = ...
     %   flag:       boolean
     %               1 if the algorithm has converged, 0 otherwise.
     %
-    %   relressvec: (1 up to maxit)-by-1 vector
+    %   relresvec: (1 up to maxit)-by-1 vector
     %               Vector of relative residual norms of every outer iteration
     %               (cycles). The last relative residual norm is simply given
     %               by relresvec(end).
