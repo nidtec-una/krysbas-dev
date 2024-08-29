@@ -1,23 +1,22 @@
 function [x, flag, relresvec, time] = ...
-    lgmres(A, b, m, k, tol, maxit, xInitial, varargin)
+    lgmres(A, b, m, l, tol, maxit, xInitial, varargin)
     % LGMRES algorithm
     %
     %   LGMRES ("Loose GMRES") is a modified implementation of the restarted
     %   Generalized Minimal Residual Error or GMRES(m) [1], performed by
-    %   appending 'k' error approximation vectors to the restarting Krylov
-    %   subspace, as a way to preserve information from previous
-    %   discarted search subspaces from previous iterations of the method.
+    %   appending 'l' error approximation vectors to the restarting Krylov
+    %   subspace, as a way to preserve information from previous discarted
+    %   search subspaces from previous iterations of the method.
     %
-    %   Augments the standard GMRES approximation space with approximations
-    %   to the error from previous restart cycles as in [1].
+    %   Augments the standard GMRES approximation space with approximations to
+    %   the error from previous restart cycles as in [1].
     %
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relresvec, time] = lgmres(A, b, m, k, tol, maxit, xInitial)
+    %   [x, flag, relresvec, time] = lgmres(A, b, m, l, tol, maxit, xInitial)
     %
-    %
-    %   Input Parameters:
+    %   Input parameters:
     %   -----------------
     %
     %   A:          n-by-n matrix
@@ -26,16 +25,16 @@ function [x, flag, relresvec, time] = ...
     %   b:          n-by-1 vector
     %               Right-hand side of the linear system Ax = b.
     %
-    %   m:          int
-    %               Restart parameter (similar to 'restart' in MATLAB).
-    %               Default is min(n, 10).
-    %               If m == n, built-in unrestarted gmres will be used.
+    %   m:          int, optional
+    %               Restart parameter (similar to 'restart' in MATLAB). Default
+    %               is min(n, 10). If m == n, built-in unrestarted gmres will
+    %               be used.
     %
-    %   k:          int
-    %               Number of error approximation vectors to be appended
-    %               to the Krylov search subspace. Default is 3, but values
-    %               between 1 and 5 are mostly used.
-    %               If m < n AND k == 0, built-in gmres(m) will be used.
+    %   l:          int, optional
+    %               Number of error approximation vectors to be appended to the
+    %               Krylov search subspace. Default is 3, but values between 1
+    %               and 5 are mostly used. If m < n AND l == 0, built-in
+    %               gmres(m) will be used.
     %
     %   tol:        float, optional
     %               Tolerance error threshold for the relative residual norm.
@@ -57,7 +56,7 @@ function [x, flag, relresvec, time] = ...
     %   flag:       boolean
     %               1 if the algorithm has converged, 0 otherwise.
     %
-    %   relresvec: (1 up to maxit)-by-1 vector
+    %   relresvec:  (1 up to maxit)-by-1 vector
     %               Vector of relative residual norms of every outer iteration
     %               (cycles). The last relative residual norm is simply given
     %               by relresvec(end).
@@ -167,7 +166,7 @@ function [x, flag, relresvec, time] = ...
     end
 
     % ----> If m < n AND k == 0, built-in gmres(m) will be used
-    if (m < n) && (k == 0)
+    if (m < n) && (l == 0)
         warning("GMRES(m) will be used.");
         tic();
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b, m);
@@ -183,8 +182,8 @@ function [x, flag, relresvec, time] = ...
     end
 
     % ----> Default value and sanity checks for k
-    if (nargin < 4) || isempty(k)
-        k = 3;
+    if (nargin < 4) || isempty(l)
+        l = 3;
     end
 
     % Default value and sanity checks for tol
@@ -236,7 +235,7 @@ function [x, flag, relresvec, time] = ...
     iter(1, :) = restart;
 
     % Matrix with the history of approximation error vectors
-    zMat = zeros(n, k);
+    zMat = zeros(n, l);
 
     % while number_of_cycles <=k, we run GMRES(m + k) only
 
@@ -246,7 +245,7 @@ function [x, flag, relresvec, time] = ...
     % Ref. [1], pag. 968, recommends GMRES(m + k)
     % if no enough approximation error vectors are stored yet.
     [x, gmres_flag, ~, ~, resvec] = ...
-        gmres(A, b, m + k, tol, 1, [], [], xInitial);
+        gmres(A, b, m + l, tol, 1, [], [], xInitial);
 
     % Update residual norm, iterations, and relative residual vector
     res(restart + 1, :) = resvec(end);
@@ -286,8 +285,8 @@ function [x, flag, relresvec, time] = ...
         % output parameteres H, V
         [H, V, s] = ...
             augmented_gram_schmidt_arnoldi ...
-            (A, v1, m + k - min(restart - 1, k), ...
-             zMat(:, 1:min(restart - 1, k)));
+            (A, v1, m + l - min(restart - 1, l), ...
+             zMat(:, 1:min(restart - 1, l)));
 
         % Plane rotations
         [HUpTri, g] = plane_rotations(H, beta);
@@ -303,10 +302,10 @@ function [x, flag, relresvec, time] = ...
         % zCurrentCycle is the approximation error vector from
         % the current outer iteration
         W = zeros(n, s);
-        W(:, 1:m + k - min(restart - 1, k)) = ...
-            V(:, 1:m + k - min(restart - 1, k));
-        W(:, m + k - min(restart - 1, k) + 1:s) = ...
-            fliplr(zMat(:, 1:min(restart - 1, k)));
+        W(:, 1:m + l - min(restart - 1, l)) = ...
+            V(:, 1:m + l - min(restart - 1, l));
+        W(:, m + l - min(restart - 1, l) + 1:s) = ...
+            fliplr(zMat(:, 1:min(restart - 1, l)));
         zCurrentCycle = W * minimizer;
         xm = xInitial + zCurrentCycle;
 
@@ -329,11 +328,11 @@ function [x, flag, relresvec, time] = ...
             xInitial = xm;
 
             % Storage of approximation error vector
-            if restart <= k
+            if restart <= l
                 zMat(:, restart) = zCurrentCycle;
             else
-                zMat(:, 1:k - 1) = zMat(:, 2:k);
-                zMat(:, k) = zCurrentCycle;
+                zMat(:, 1:l - 1) = zMat(:, 2:l);
+                zMat(:, l) = zCurrentCycle;
             end
 
             restart = restart + 1;
