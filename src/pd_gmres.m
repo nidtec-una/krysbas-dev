@@ -1,4 +1,4 @@
-function [x, flag, relresvec, mvec, time] = ...
+function [x, flag, relresvec, kdvec, time] = ...
     pd_gmres(A, b, mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD, ...
              varargin)
     % PD-GMRES Proportional-Derivative GMRES(m)
@@ -12,7 +12,7 @@ function [x, flag, relresvec, mvec, time] = ...
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relresvec, mvec, time] = pd_gmres(A, b, ...
+    %   [x, flag, relresvec, kdvec, time] = pd_gmres(A, b, ...
     %       mInitial, mMinMax, mStep, tol, maxit, xInitial, alphaPD)
     %
     %
@@ -72,7 +72,7 @@ function [x, flag, relresvec, mvec, time] = ...
     %               (cycles). The last relative residual norm is simply given
     %               by relresvec(end).
     %
-    %   mvec:       (1 up to maxit)-by-1 vector
+    %   kdvec:      (1 up to maxit)-by-1 vector
     %               Vector of restart parameter values. In case the
     %               unrestarted algorithm is invoked, mvec = NaN.
     %
@@ -289,7 +289,7 @@ function [x, flag, relresvec, mvec, time] = ...
         relresvec = [resvec(1); resvec(end)] ./ resvec(1);
 
         % The vector of restart parameters is not used, return NaN
-        mvec = NaN;
+        kdvec = NaN;
 
         time = toc();
         return
@@ -304,7 +304,7 @@ function [x, flag, relresvec, mvec, time] = ...
     res(1, :) = norm(r0);
     relresvec(1, :) = (norm(r0) / res(1, 1));
     iter(1, :) = restart;
-    mvec(1, 1) = mInitial;
+    kdvec(1, 1) = mInitial;
 
     tic();  % start measuring CPU time
 
@@ -320,7 +320,7 @@ function [x, flag, relresvec, mvec, time] = ...
         else
             m = mInitial;
         end
-        mvec(iter(size(iter, 1), :) + 1, 1) = m;
+        kdvec(iter(size(iter, 1), :) + 1, 1) = m;
 
         % Compute normalized residual vector
         r = b - A * xInitial;
