@@ -108,7 +108,7 @@ function test_default_value_of_m()
     A = eye(3);
     b = ones(3, 1);
 
-    [x, flag, ~, ~] = lgmres(A, b);
+    [x, flag, ~, ~, ~] = lgmres(A, b);
 
     assertElementsAlmostEqual(x, ones(3, 1));
     assert(flag == 1);
@@ -136,9 +136,10 @@ function test_full_gmres_when_m_equals_size_of_A()
     b = ones(3, 1);
 
     x1 = gmres(A, b);
-    [x2, flag, relresvec, time] = lgmres(A, b, 3, 0);
+    [x2, flag, relresvec, kdvec, time] = lgmres(A, b, 3, 0);
 
     assertElementsAlmostEqual(x1, x2);
+    assertEqual(kdvec, [3; 3])
     assert(flag == 1);
     assertElementsAlmostEqual(relresvec, [1; 0]);
     assert(time > 0 && time < 5);
@@ -151,10 +152,11 @@ function test_restarted_gmres_when_m_is_less_than_size_of_A()
     b = ones(3, 1);
 
     x1 = gmres(A, b, 2);
-    [x2, flag, relresvec, time] = lgmres(A, b, 2, 0);
+    [x2, flag, relresvec, kdvec, time] = lgmres(A, b, 2, 0);
 
     assertElementsAlmostEqual(x1, x2);
     assert(flag == 1);
+    assertEqual(kdvec, [2; 2]);
     assertElementsAlmostEqual(relresvec, [1; 0]);
     assert(time > 0 && time < 5);
 end
@@ -198,14 +200,17 @@ function test_outputs_unrestarted_identity_matrix() % Linear system # 1
     n = 100;
     A = eye(n);
     b = ones(n, 1);
+    m = 27;
+    l = 3;
     xInitial = zeros(n, 1);
 
     % Call LGMRES
-    [x, flag, relresvec, time] = lgmres(A, b, 27, 3, 1e-6, 100, xInitial);
+    [x, flag, relresvec, kdvec, time] = lgmres(A, b, m, l, 1e-6, 100, xInitial);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, ones(n, 1));
     assert(flag == 1);
+    assertEqual(kdvec, [m+l; m+l]);
     assertElementsAlmostEqual(relresvec, [1; 0]);
     assert(time > 0 && time < 5);
 end
@@ -222,11 +227,12 @@ function test_outputs_restarted_identity_matrix() % Linear system # 2
     xInitial = zeros(n, 1);
 
     % Call LGMRES
-    [x, flag, relresvec, time] = lgmres(A, b, 2, 1, 1e-6, 100, xInitial);
+    [x, flag, relresvec, kdvec, time] = lgmres(A, b, 2, 1, 1e-6, 100, xInitial);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [2; 3; 4]);
     assert(flag == 1);
+    assertEqual(kdvec, [3; 3]);
     assertElementsAlmostEqual(relresvec, [1; 0]);
     assert(time > 0 && time < 5);
 
@@ -242,13 +248,12 @@ function test_embree_three_by_three_toy_example()
 
     % Setup LGMRES
     m = 2;
-    k = 1;
+    l = 1;
     tol = 1e-6;
     maxit = 100;
 
     % Call LGMRES
-    [x, flag, ~, ~] = ...
-        lgmres(A, b, m, k, tol, maxit);
+    [x, flag, ~, ~, ~] = lgmres(A, b, m, l, tol, maxit);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [8; -7; 1]);
@@ -266,13 +271,12 @@ function test_sherman_one()
 
     % Setup LGMRES
     m = 27;
-    k = 3;
+    l = 3;
     tol = 1e-12;
     maxit = 1000;
 
     % Call LGMRES
-    [~, flag, relresvec, ~] = ...
-            lgmres(A, b, m, k, tol, maxit);
+    [~, flag, relresvec, ~, ~] = lgmres(A, b, m, l, tol, maxit);
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
@@ -289,13 +293,13 @@ function test_sherman_four()
 
     % Setup LGMRES
     m = 27;
-    k = 3;
+    l = 3;
     tol = 1e-12;
     maxit = 1000;
 
     % Call LGMRES
-    [~, flag, relresvec, ~] = ...
-            lgmres(A, b, m, k, tol, maxit);
+    [~, flag, relresvec, ~, ~] = ...
+            lgmres(A, b, m, l, tol, maxit);
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
