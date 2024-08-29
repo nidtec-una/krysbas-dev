@@ -8,14 +8,13 @@ function [x, flag, relresvec, time] = ...
     %   subspace, as a way to preserve information from previous discarted
     %   search subspaces from previous iterations of the method.
     %
-    %   Augments the standard GMRES approximation space with approximations
-    %   to the error from previous restart cycles as in [1].
+    %   Augments the standard GMRES approximation space with approximations to
+    %   the error from previous restart cycles as in [1].
     %
     %   Signature:
     %   ----------
     %
     %   [x, flag, relresvec, time] = lgmres(A, b, m, l, tol, maxit, xInitial)
-    %
     %
     %   Input parameters:
     %   -----------------
@@ -57,7 +56,7 @@ function [x, flag, relresvec, time] = ...
     %   flag:       boolean
     %               1 if the algorithm has converged, 0 otherwise.
     %
-    %   relresvec: (1 up to maxit)-by-1 vector
+    %   relresvec:  (1 up to maxit)-by-1 vector
     %               Vector of relative residual norms of every outer iteration
     %               (cycles). The last relative residual norm is simply given
     %               by relresvec(end).
