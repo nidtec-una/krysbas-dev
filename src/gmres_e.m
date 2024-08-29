@@ -33,8 +33,8 @@ function [x, flag, relresvec, time] = ...
     %               a few of the smallest eigenvalues in magnitude
     %               for each outer iteration. Default is 3, but values
     %               between 1 and 5 are mostly used.
-    %               According to [1], "even just a few eigenvectors can make 
-    %               a big difference if the matrix has both small and large 
+    %               According to [1], "even just a few eigenvectors can make
+    %               a big difference if the matrix has both small and large
     %               eigenvalues".
     %               If m < n AND k == 0, built-in gmres(m) will be used.
     %
