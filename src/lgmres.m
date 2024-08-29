@@ -1,4 +1,4 @@
-function [x, flag, relresvec, time] = ...
+function [x, flag, relresvec, kdvec, time] = ...
     lgmres(A, b, m, l, tol, maxit, xInitial, varargin)
     % LGMRES algorithm
     %
@@ -61,9 +61,9 @@ function [x, flag, relresvec, time] = ...
     %               (cycles). The last relative residual norm is simply given
     %               by relresvec(end).
     %
-    %   mvec:       (1 up to maxit)-by-1 vector
-    %               Vector of restart parameter values. In case the
-    %               unrestarted algorithm is invoked, mvec = NaN.
+    %   kdvec:      (1 up to maxit)-by-1 vector
+    %               For LGMRES, kdvec is a constant vector whose elements
+    %               correspond to the size of the Krylov subspace, i.e., l + d.
     %
     %   time:       scalar
     %               Computational time in seconds.
@@ -151,7 +151,6 @@ function [x, flag, relresvec, time] = ...
 
     % ----> If m == n, built-in unrestarted gmres will be used
     if m == n
-        warning("Full GMRES will be used.");
         tic();
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b);
         time = toc();
@@ -162,12 +161,12 @@ function [x, flag, relresvec, time] = ...
             flag = 0;
         end
         relresvec = resvec ./ resvec(1, 1);
+        kdvec = m .* ones(length(relresvec), 1);
         return
     end
 
-    % ----> If m < n AND k == 0, built-in gmres(m) will be used
+    % ----> If m < n AND l == 0, built-in gmres(m) will be used
     if (m < n) && (l == 0)
-        warning("GMRES(m) will be used.");
         tic();
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b, m);
         time = toc();
@@ -178,10 +177,11 @@ function [x, flag, relresvec, time] = ...
             flag = 0;
         end
         relresvec = resvec ./ resvec(1, 1);
+        kdvec = m .* ones(length(relresvec), 1);
         return
     end
 
-    % ----> Default value and sanity checks for k
+    % ----> Default value and sanity checks for l
     if (nargin < 4) || isempty(l)
         l = 3;
     end
@@ -237,12 +237,12 @@ function [x, flag, relresvec, time] = ...
     % Matrix with the history of approximation error vectors
     zMat = zeros(n, l);
 
-    % while number_of_cycles <=k, we run GMRES(m + k) only
+    % while number_of_cycles <= l, we run GMRES(m + l) only
 
     tic(); % start measuring CPU time
 
     % Call MATLAB built-in gmres.
-    % Ref. [1], pag. 968, recommends GMRES(m + k)
+    % Ref. [1], pag. 968, recommends GMRES(m + l)
     % if no enough approximation error vectors are stored yet.
     [x, gmres_flag, ~, ~, resvec] = ...
         gmres(A, b, m + l, tol, 1, [], [], xInitial);
@@ -263,11 +263,12 @@ function [x, flag, relresvec, time] = ...
     else
         flag = 1;
         time = toc();
+        kdvec = (m + l) .* ones(length(relresvec), 1);
         return
     end
 
     % ---> LGMRES Algorithm for restart > 1 or
-    % LGMRES(m, k)
+    % LGMRES(m, l)
 
     while flag == 0 && restart <= maxit
 
@@ -277,11 +278,11 @@ function [x, flag, relresvec, time] = ...
         v1 = r / beta;
 
         % Modified Gram-Schmidt Arnoldi iteration
-        % Notice that for augmented Krylov subspaces, we need zHistory
-        % where zHistory, a n-by-k matrix, is the history of approximation
-        % error vectors from the last outer iterations
+        % Notice that for augmented Krylov subspaces, we need zHistory where
+        % zHistory, a n-by-k matrix, is the history of approximation error
+        % vectors from the last outer iterations
         % For LGMRES we must take in consideration that
-        % s = m + k is related to the size of
+        % s = m + ; is related to the size of
         % output parameteres H, V
         [H, V, s] = ...
             augmented_gram_schmidt_arnoldi ...
@@ -296,11 +297,10 @@ function [x, flag, relresvec, time] = ...
         gs = g(1:s);
         minimizer = Rs \ gs;
 
-        % From [1], fig. 1, lines 10 and 12, the n-by-s matrix W
-        % is created with the first m Arnoldi vectors and the
-        % k approximation error vectos, from newest to oldest,
-        % zCurrentCycle is the approximation error vector from
-        % the current outer iteration
+        % From [1], fig. 1, lines 10 and 12, the n-by-s matrix W is created with
+        % the first m Arnoldi vectors and the l approximation error vectors,
+        % from newest to oldest, zCurrentCycle is the approximation error vector
+        % from the current outer iteration
         W = zeros(n, s);
         W(:, 1:m + l - min(restart - 1, l)) = ...
             V(:, 1:m + l - min(restart - 1, l));
@@ -312,18 +312,17 @@ function [x, flag, relresvec, time] = ...
         % Update residual norm, iterations, and relative residual vector
         res(restart + 1, :) = abs(g(s + 1, 1));
         iter(restart + 1, :) = restart + 1;
-        relresvec(size(relresvec, 1) + 1, :) = ...
-            res(restart + 1, :) / res(1, 1);
+        relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
 
         % Check convergence
         if relresvec(restart + 1, 1) < tol
             % We reached convergence.
             flag = 1;
             x = xm;
+            kdvec = (m + l) .* ones(length(relresvec), 1);
             time = toc();
             return
         elseif restart <= maxit
-
             % We have not reached convergence. Update and restart.
             xInitial = xm;
 
@@ -340,6 +339,7 @@ function [x, flag, relresvec, time] = ...
 
     end
 
+    kdvec = (m + l) .* ones(length(relresvec), 1);
     time = toc();
 
 end
