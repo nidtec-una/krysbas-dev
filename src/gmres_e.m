@@ -12,8 +12,7 @@ function [x, flag, relresvec, time] = ...
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relresvec, time] = ...
-    %       lgmres(A, b, m, k, tol, maxit, xInitial)
+    %   [x, flag, relresvec, time] = gmres_e(A, b, m, k, tol, maxit, xInitial)
     %
     %
     %   Input Parameters:
@@ -27,11 +26,17 @@ function [x, flag, relresvec, time] = ...
     %
     %   m:          int
     %               Restart parameter (similar to 'restart' in MATLAB).
+    %               If m == n, built-in unrestarted gmres will be used
     %
     %   k:          int
     %               Number of eigenvectors corresponding to
-    %               a few of the smallest eigenvalues in magnitude\
-    %               for each outer iteration.
+    %               a few of the smallest eigenvalues in magnitude
+    %               for each outer iteration. Default is 3, but values
+    %               between 1 and 5 are mostly used.
+    %               According to [1], "even just a few eigenvectors can make 
+    %               a big difference if the matrix has both small and large 
+    %               eigenvalues".
+    %               If m < n AND k == 0, built-in gmres(m) will be used.
     %
     %   tol:        float, optional
     %               Tolerance error threshold for the relative residual norm.
@@ -39,6 +44,7 @@ function [x, flag, relresvec, time] = ...
     %
     %   maxit:      int, optional
     %               Maximum number of outer iterations.
+    %               Default is min(m, 10).
     %
     %   xInitial:   n-by-1 vector, optional
     %               Vector of initial guess. Default is zeros(n, 1).
@@ -52,7 +58,7 @@ function [x, flag, relresvec, time] = ...
     %   flag:       boolean
     %               1 if the algorithm has converged, 0 otherwise.
     %
-    %   relressvec: (1 up to maxit)-by-1 vector
+    %   relresvec: (1 up to maxit)-by-1 vector
     %               Vector of relative residual norms of every outer iteration
     %               (cycles). The last relative residual norm is simply given
     %               by relresvec(end).
@@ -129,9 +135,9 @@ function [x, flag, relresvec, time] = ...
 
     clear rowsb colsb;
 
-    % Special sanity checks for LGMRES here
+    % Special sanity checks for GMRES-E here
 
-    % ----> Default value and sanityu checks for m
+    % ----> Default value and sanity checks for m
     if (nargin < 3) || isempty(m)
         m = min(n, 10);
     end
@@ -251,7 +257,7 @@ function [x, flag, relresvec, time] = ...
     relresvec(restart + 1, :) = res(restart + 1, :) / res(1, 1);
 
     % Check convergence
-    if relresvec(restart + 1, :) < tol %|| size(relresvec, 1) == maxit
+    if relresvec(restart + 1, :) < tol
         % We reached convergence.
         flag = 1;
         x = xm;
@@ -318,8 +324,7 @@ function [x, flag, relresvec, time] = ...
     % Empty matrix E for next outer iteration
     E = zeros(s, k);
 
-    % ---> GMRES-E Algorithm for restart > 1 or
-    % GMRES-E(m, k)
+    % ---> GMRES-E Algorithm for restart > 1
 
     while flag == 0 && restart <= maxit
 
@@ -383,7 +388,7 @@ function [x, flag, relresvec, time] = ...
             for q = 1:k
                 E(:, q) = E2(:, I(q, 1));
             end
-            dy0 = V * E; % yi = Q * gi???
+            dy0 = V * E;
 
             dy = [];
 
