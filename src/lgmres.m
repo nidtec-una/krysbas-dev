@@ -1,5 +1,5 @@
 function [x, flag, relresvec, time] = ...
-    lgmres(A, b, m, k, tol, maxit, xInitial, varargin)
+    lgmres(A, b, m, l, tol, maxit, xInitial, varargin)
     % LGMRES algorithm
     %
     %   LGMRES ("Loose GMRES") is a modified implementation of the restarted
@@ -167,7 +167,7 @@ function [x, flag, relresvec, time] = ...
     end
 
     % ----> If m < n AND k == 0, built-in gmres(m) will be used
-    if (m < n) && (k == 0)
+    if (m < n) && (l == 0)
         warning("GMRES(m) will be used.");
         tic();
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b, m);
@@ -183,8 +183,8 @@ function [x, flag, relresvec, time] = ...
     end
 
     % ----> Default value and sanity checks for k
-    if (nargin < 4) || isempty(k)
-        k = 3;
+    if (nargin < 4) || isempty(l)
+        l = 3;
     end
 
     % Default value and sanity checks for tol
@@ -236,7 +236,7 @@ function [x, flag, relresvec, time] = ...
     iter(1, :) = restart;
 
     % Matrix with the history of approximation error vectors
-    zMat = zeros(n, k);
+    zMat = zeros(n, l);
 
     % while number_of_cycles <=k, we run GMRES(m + k) only
 
@@ -246,7 +246,7 @@ function [x, flag, relresvec, time] = ...
     % Ref. [1], pag. 968, recommends GMRES(m + k)
     % if no enough approximation error vectors are stored yet.
     [x, gmres_flag, ~, ~, resvec] = ...
-        gmres(A, b, m + k, tol, 1, [], [], xInitial);
+        gmres(A, b, m + l, tol, 1, [], [], xInitial);
 
     % Update residual norm, iterations, and relative residual vector
     res(restart + 1, :) = resvec(end);
@@ -286,8 +286,8 @@ function [x, flag, relresvec, time] = ...
         % output parameteres H, V
         [H, V, s] = ...
             augmented_gram_schmidt_arnoldi ...
-            (A, v1, m + k - min(restart - 1, k), ...
-             zMat(:, 1:min(restart - 1, k)));
+            (A, v1, m + l - min(restart - 1, l), ...
+             zMat(:, 1:min(restart - 1, l)));
 
         % Plane rotations
         [HUpTri, g] = plane_rotations(H, beta);
@@ -303,10 +303,10 @@ function [x, flag, relresvec, time] = ...
         % zCurrentCycle is the approximation error vector from
         % the current outer iteration
         W = zeros(n, s);
-        W(:, 1:m + k - min(restart - 1, k)) = ...
-            V(:, 1:m + k - min(restart - 1, k));
-        W(:, m + k - min(restart - 1, k) + 1:s) = ...
-            fliplr(zMat(:, 1:min(restart - 1, k)));
+        W(:, 1:m + l - min(restart - 1, l)) = ...
+            V(:, 1:m + l - min(restart - 1, l));
+        W(:, m + l - min(restart - 1, l) + 1:s) = ...
+            fliplr(zMat(:, 1:min(restart - 1, l)));
         zCurrentCycle = W * minimizer;
         xm = xInitial + zCurrentCycle;
 
@@ -329,11 +329,11 @@ function [x, flag, relresvec, time] = ...
             xInitial = xm;
 
             % Storage of approximation error vector
-            if restart <= k
+            if restart <= l
                 zMat(:, restart) = zCurrentCycle;
             else
-                zMat(:, 1:k - 1) = zMat(:, 2:k);
-                zMat(:, k) = zCurrentCycle;
+                zMat(:, 1:l - 1) = zMat(:, 2:l);
+                zMat(:, l) = zCurrentCycle;
             end
 
             restart = restart + 1;
