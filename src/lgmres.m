@@ -4,9 +4,9 @@ function [x, flag, relresvec, time] = ...
     %
     %   LGMRES ("Loose GMRES") is a modified implementation of the restarted
     %   Generalized Minimal Residual Error or GMRES(m) [1], performed by
-    %   appending 'k' error approximation vectors to the restarting Krylov
-    %   subspace, as a way to preserve information from previous
-    %   discarted search subspaces from previous iterations of the method.
+    %   appending 'l' error approximation vectors to the restarting Krylov
+    %   subspace, as a way to preserve information from previous discarted
+    %   search subspaces from previous iterations of the method.
     %
     %   Augments the standard GMRES approximation space with approximations
     %   to the error from previous restart cycles as in [1].
@@ -14,10 +14,10 @@ function [x, flag, relresvec, time] = ...
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relresvec, time] = lgmres(A, b, m, k, tol, maxit, xInitial)
+    %   [x, flag, relresvec, time] = lgmres(A, b, m, l, tol, maxit, xInitial)
     %
     %
-    %   Input Parameters:
+    %   Input parameters:
     %   -----------------
     %
     %   A:          n-by-n matrix
@@ -26,16 +26,16 @@ function [x, flag, relresvec, time] = ...
     %   b:          n-by-1 vector
     %               Right-hand side of the linear system Ax = b.
     %
-    %   m:          int
-    %               Restart parameter (similar to 'restart' in MATLAB).
-    %               Default is min(n, 10).
-    %               If m == n, built-in unrestarted gmres will be used.
+    %   m:          int, optional
+    %               Restart parameter (similar to 'restart' in MATLAB). Default
+    %               is min(n, 10). If m == n, built-in unrestarted gmres will
+    %               be used.
     %
-    %   k:          int
-    %               Number of error approximation vectors to be appended
-    %               to the Krylov search subspace. Default is 3, but values
-    %               between 1 and 5 are mostly used.
-    %               If m < n AND k == 0, built-in gmres(m) will be used.
+    %   l:          int, optional
+    %               Number of error approximation vectors to be appended to the
+    %               Krylov search subspace. Default is 3, but values between 1
+    %               and 5 are mostly used. If m < n AND l == 0, built-in
+    %               gmres(m) will be used.
     %
     %   tol:        float, optional
     %               Tolerance error threshold for the relative residual norm.
