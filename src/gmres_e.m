@@ -5,7 +5,7 @@ function [x, flag, relresvec, time] = ...
     %   GMRES-E is a modified implementation of the restarted
     %   Generalized Minimal Residual Error or GMRES(m) [1], performed by
     %   appending 'd' eigenvectors corresponding to a few of the smallest
-    %   eigenvalues in magnitude for each outer iteration. In practice, the 
+    %   eigenvalues in magnitude for each outer iteration. In practice, the
     %   approximate eigenvectors are the harmonic Ritz vectors associated to the
     %   harmonic Ritz values per outer iteration.
     %
@@ -225,7 +225,7 @@ function [x, flag, relresvec, time] = ...
 
     % ---> GMRES-E algorithm starts here
     % First outer iteration is a simple restarted GMRES(m + k) execution
-    % Afterwards, we can compute the 'd' eigenvectors if convergence is 
+    % Afterwards, we can compute the 'd' eigenvectors if convergence is
     % not achieved.
 
     % Compute normalized residual vector
@@ -309,7 +309,7 @@ function [x, flag, relresvec, time] = ...
         gs = g(1:s);
         minimizer = Rs \ gs;
 
-        % Replace last k vectors from matrix V with the approximate 
+        % Replace last k vectors from matrix V with the approximate
         % eigenvectors, and compute the new approximate solution, as done
         % in step 4, p. 1161 of [1].
         V(:, m + 1:s) = dy(:, 1:k);
