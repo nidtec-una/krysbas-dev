@@ -45,9 +45,9 @@ function test_number_of_input_arguments()
         assert(matches(ME.message, msg));
     end
 
-    % Error should be raised since 8 parameters are given
+    % Error should be raised since 9 parameters are given
     try
-        gmres_e([], [], [], [], [], [], [], []);
+        gmres_e([], [], [], [], [], [], [], [], []);
     catch ME
         msg = "Too many input parameters.";
         assert(matches(ME.message, msg));
