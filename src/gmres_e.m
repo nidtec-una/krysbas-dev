@@ -31,8 +31,8 @@ function [x, flag, relresvec, kdvec, time] = ...
     %
     %   d:          int
     %               Number of eigenvectors corresponding to a few of the
-    %               smallest eigenvalues in magnitude for each outer 
-    %               iteration. Default is min(m, 3), but values between 
+    %               smallest eigenvalues in magnitude for each outer
+    %               iteration. Default is min(m, 3), but values between
     %               1 and 5 are typical. According to [1], "even just a few
     %               eigenvectors can make a big difference if the matrix has
     %               both small and large eigenvalues". If m < n AND d == 0,
@@ -65,7 +65,7 @@ function [x, flag, relresvec, kdvec, time] = ...
     %               1 if the algorithm has converged, 0 otherwise.
     %
     %   relresvec:  (1 up to maxit)-by-1 vector
-    %               Vector of relative residual norms of every outer 
+    %               Vector of relative residual norms of every outer
     %               iteration (cycles). The last relative residual norm is
     %               simply given by relresvec(end).
     %
