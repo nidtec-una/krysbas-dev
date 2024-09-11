@@ -6,8 +6,8 @@ function [x, flag, relresvec, kdvec, time] = ...
     %   Generalized Minimal Residual Error or GMRES(m) [1], performed by
     %   appending 'd' eigenvectors corresponding to a few of the smallest
     %   eigenvalues in magnitude for each outer iteration. In practice, the
-    %   approximate eigenvectors are the harmonic Ritz vectors associated to the
-    %   harmonic Ritz values per outer iteration.
+    %   approximate eigenvectors are the harmonic Ritz vectors associated to
+    %   the harmonic Ritz values per outer iteration.
     %
     %   Signature:
     %   ----------
@@ -31,12 +31,13 @@ function [x, flag, relresvec, kdvec, time] = ...
     %
     %   d:          int
     %               Number of eigenvectors corresponding to a few of the
-    %               smallest eigenvalues in magnitude for each outer iteration.
-    %               Default is min(m, 3), but values between 1 and 5 are
-    %               typical. According to [1], "even just a few eigenvectors
-    %               can make a big difference if the matrix has both small and
-    %               large eigenvalues". If m < n AND d == 0, the built-in
-    %               gmres(m) will be used. If d > m, an error is raised.
+    %               smallest eigenvalues in magnitude for each outer 
+    %               iteration. Default is min(m, 3), but values between 
+    %               1 and 5 are typical. According to [1], "even just a few
+    %               eigenvectors can make a big difference if the matrix has
+    %               both small and large eigenvalues". If m < n AND d == 0,
+    %               the built-in gmres(m) will be used. If d > m, an error
+    %               is raised.
     %
     %   tol:        float, optional
     %               Tolerance error threshold for the relative residual norm.
@@ -51,7 +52,7 @@ function [x, flag, relresvec, kdvec, time] = ...
     %
     %   eigstol:    float, optional
     %               Tolerance for computing eigenvectors using the built-in
-    %               MATLAB function `eigs`. Deault is 1e-6.
+    %               MATLAB function `eigs`. Default is 1e-6.
     %
     %
     %   Output parameters:
@@ -64,15 +65,16 @@ function [x, flag, relresvec, kdvec, time] = ...
     %               1 if the algorithm has converged, 0 otherwise.
     %
     %   relresvec:  (1 up to maxit)-by-1 vector
-    %               Vector of relative residual norms of every outer iteration
-    %               (cycles). The last relative residual norm is simply given
-    %               by relresvec(end).
+    %               Vector of relative residual norms of every outer 
+    %               iteration (cycles). The last relative residual norm is
+    %               simply given by relresvec(end).
     %
     %   kdvec:      (1 up to maxit)-by-1 vector
     %               For LGMRES, kdvec is a constant vector whose elements
-    %               correspond to the size of the Krylov subspace, i.e., m + d.
-    %               Note that in some cases, there could be a "happy breakdown"
-    %               where the dimension of the search space < m + d.
+    %               correspond to the size of the Krylov subspace, i.e.,
+    %               m + d. Note that in some cases, there could be a
+    %               "happy breakdown" where the dimension of the search
+    %               space < m + d.
     %
     %   time:       float
     %               Computational time in seconds.
@@ -80,9 +82,9 @@ function [x, flag, relresvec, kdvec, time] = ...
     %   References:
     %   -----------
     %
-    %   [1] Morgan, R. B. (1995). A restarted GMRES method augmented
-    %   with eigenvectors. SIAM Journal on Matrix Analysis and
-    %   Applications, 16(4), 1154-1171.
+    %   [1] Morgan, R. B. (1995). A restarted GMRES method augmented with
+    %   eigenvectors. SIAM Journal on Matrix Analysis and Applications,
+    %   16(4), 1154-1171.
     %
     %   Copyright:
     %   ----------
@@ -91,10 +93,10 @@ function [x, flag, relresvec, kdvec, time] = ...
     %
     %   Copyright 2023 CC&MA - NIDTec - FP - UNA
     %
-    %   KrySBAS is free software: you can redistribute it and/or modify it under
-    %   the terms of the GNU General Public License as published by the Free
-    %   Software Foundation, either version 3 of the License, or (at your
-    %   option) any later version.
+    %   KrySBAS is free software: you can redistribute it and/or modify it
+    %   under the terms of the GNU General Public License as published by the
+    %   Free Software Foundation, either version 3 of the License, or (at
+    %   your option) any later version.
     %
     %   KrySBAS is distributed in the hope that it will be useful, but WITHOUT
     %   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or

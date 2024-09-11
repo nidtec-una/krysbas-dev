@@ -1,11 +1,10 @@
 function dy = harmonic_ritz_vectors(F, G, k, V, tol)
     % Harmonic Ritz Vectors function
     %
-    %   This function is a modified implementation of the Rayleigh-Ritz
-    %   method that finds good approximations to the smallest eigenvalues
-    %   and its associated eigenvectors, and appends these ones to the next
-    %   search subspaces. Please refer to [1] for more information about
-    %   this technique.
+    %   This function is a modified implementation of the Rayleigh-Ritz method
+    %   that finds good approximations to the smallest eigenvalues and its
+    %   associated eigenvectors, and appends these ones to the next search
+    %   subspaces. Refer to [1] for more information about this technique.
     %
     %   Signature:
     %   ----------
