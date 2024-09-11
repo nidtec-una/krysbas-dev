@@ -238,7 +238,7 @@ function test_outputs_restarted_identity_matrix() % Linear system # 2
 
 end
 
-function test_embree_three_by_three_toy_example()
+function test_embree_3x3_toy_example()
     % Test Embree's 3x3 linear system from https://www.jstor.org/stable/25054403
 
     % Load A and b
@@ -261,7 +261,7 @@ function test_embree_three_by_three_toy_example()
 
 end
 
-function test_sherman_one()
+function test_sherman1()
     % Test lgmres with sherman1 matrix
 
     % Load A and b
@@ -283,7 +283,7 @@ function test_sherman_one()
     assertEqual(size(relresvec, 1), 39);
 end
 
-function test_sherman_four()
+function test_sherman4()
     % Test lgmres with sherman4 matrix
 
     % Load A and b
