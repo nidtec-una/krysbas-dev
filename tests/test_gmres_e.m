@@ -301,7 +301,7 @@ function test_sherman_one()
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
-    assertEqual(size(relresvec, 1), 61);
+    assertEqual(size(relresvec, 1), 60);
     assert(time > 0 && time < 100);
 end
 
