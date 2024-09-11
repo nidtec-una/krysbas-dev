@@ -329,7 +329,7 @@ function test_outputs_restarted_identity_matrix()
 
 end
 
-function test_embree_three_by_three_toy_example()
+function test_embree_3x3_toy_example()
     % Test Embree's 3x3 linear system from https://www.jstor.org/stable/25054403
     % with PD-GMRES. We construct two checks, one with mInitial = 1, and
     % one with mInitial = 2. Note that the gmres(m) algorithm with m = 2,
@@ -375,7 +375,7 @@ function test_embree_three_by_three_toy_example()
 
 end
 
-function test_sherman_one()
+function test_sherman1()
     % Test pd_gmres with sherman1 matrix
 
     % Load A and b
@@ -399,7 +399,7 @@ function test_sherman_one()
 
 end
 
-function test_sherman_four()
+function test_sherman4()
     % Test pd_gmres with sherman4 matrix
 
     % Load A and b
