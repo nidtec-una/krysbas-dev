@@ -320,8 +320,10 @@ function [x, flag, relresvec, time] = ...
         gs = g(1:s);
         minimizer = Rs \ gs;
 
-        % Re-write last k vectors???
-        V(:, m + 1:s) = dy(:, 1:d);
+        % Replace last k vectors from matrix V with the approximate 
+        % eigenvectors, and compute the new approximate solution, as done
+        % in step 4, p. 1161 of [1].
+        V(:, m + 1:s) = dy(:, 1:k);
         x = xm + V * minimizer;
 
         % Update residual norm, iterations, and relative residual vector
