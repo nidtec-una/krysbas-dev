@@ -74,7 +74,7 @@ function [x, flag, relresvec, kdvec, time] = ...
     %
     %   kdvec:      (1 up to maxit)-by-1 vector
     %               Vector of restart parameter values. In case the unrestarted
-    %               algorithm is invoked, kdvec = NaN. 
+    %               algorithm is invoked, kdvec = NaN.
     %
     %   time:       scalar
     %               Computational time in seconds.

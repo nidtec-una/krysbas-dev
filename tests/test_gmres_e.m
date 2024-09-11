@@ -141,7 +141,7 @@ function test_full_gmres_when_m_equals_size_of_A()
     assertElementsAlmostEqual(x1, x2);
     assert(flag == 1);
     assertElementsAlmostEqual(relresvec, [1; 0]);
-    assertElementsAlmostEqual(kdvec, [3; 3])
+    assertElementsAlmostEqual(kdvec, [3; 3]);
     assert(time > 0 && time < 5);
 end
 
@@ -320,7 +320,7 @@ function test_sherman1()
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
     assertEqual(size(relresvec, 1), 60);
-    assertElementsAlmostEqual(kdvec, (m+d) * ones(60, 1))
+    assertElementsAlmostEqual(kdvec, (m + d) * ones(60, 1));
     assert(time > 0 && time < 100);
 end
 
@@ -344,6 +344,6 @@ function test_sherman4()
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
     assertEqual(size(relresvec, 1), 10);
-    assertElementsAlmostEqual(kdvec, (m+d) * ones(10, 1))
+    assertElementsAlmostEqual(kdvec, (m + d) * ones(10, 1));
     assert(time > 0 && time < 100);
 end

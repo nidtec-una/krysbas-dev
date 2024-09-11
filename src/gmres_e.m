@@ -70,7 +70,7 @@ function [x, flag, relresvec, kdvec, time] = ...
     %
     %   kdvec:      (1 up to maxit)-by-1 vector
     %               For LGMRES, kdvec is a constant vector whose elements
-    %               correspond to the size of the Krylov subspace, i.e., m + d. 
+    %               correspond to the size of the Krylov subspace, i.e., m + d.
     %               Note that in some cases, there could be a "happy breakdown"
     %               where the dimension of the search space < m + d.
     %
