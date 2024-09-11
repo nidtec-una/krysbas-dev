@@ -31,11 +31,11 @@ function [x, flag, relresvec, time] = ...
     %   d:          int
     %               Number of eigenvectors corresponding to a few of the
     %               smallest eigenvalues in magnitude for each outer iteration.
-    %               Default is 3, but values between 1 and 5 are typical.
-    %               According to [1], "even just a few eigenvectors can make
-    %               a big difference if the matrix has both small and large
-    %               eigenvalues". Note that if m < n AND k == 0, the built-in
-    %               gmres(m) will be used.
+    %               Default is min(m, 3), but values between 1 and 5 are
+    %               typical. According to [1], "even just a few eigenvectors
+    %               can make a big difference if the matrix has both small and
+    %               large eigenvalues". If m < n AND d == 0, the built-in
+    %               gmres(m) will be used. If d > m, an error is raised.
     %
     %   tol:        float, optional
     %               Tolerance error threshold for the relative residual norm.
@@ -178,7 +178,12 @@ function [x, flag, relresvec, time] = ...
 
     % ----> Default value and sanity checks for d
     if (nargin < 4) || isempty(d)
-        d = 3;
+        d = min(m, 3);
+    end
+
+    % ----> d cannot be larger than m
+    if d > m
+        error("d cannot be larger than m");
     end
 
     % Default value and sanity checks for tol

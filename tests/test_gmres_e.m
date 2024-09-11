@@ -145,8 +145,7 @@ function test_full_gmres_when_m_equals_size_of_A()
 end
 
 function test_restarted_gmres_when_m_is_less_than_size_of_A()
-    % Test if built-in restarted GMREs is set
-    % when m < size(A, 1)
+    % Test if built-in restarted GMREs is set when m < size(A, 1)
     A = eye(3);
     b = ones(3, 1);
 
@@ -157,6 +156,21 @@ function test_restarted_gmres_when_m_is_less_than_size_of_A()
     assert(flag == 1);
     assertElementsAlmostEqual(relresvec, [1; 0]);
     assert(time > 0 && time < 5);
+end
+
+function test_error_is_raised_if_d_is_greater_than_m()
+    % Test whether the default value of d is employed
+    A = eye(3);
+    b = ones(3, 1);
+    m = 1;
+    d = 2;
+
+    try
+        gmres_e(A, b, m, d);
+    catch ME
+        msg = "d cannot be larger than m";
+        assert(matches(ME.message, msg));
+    end
 end
 
 function test_vector_xInitial_not_column_vector()
