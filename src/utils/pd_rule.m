@@ -2,7 +2,7 @@ function miter = pd_rule(m, n, mInitial, mMin, mMax, mStep,  ...
                          res, iter, alphaP, alphaD)
     % Rule for the Proportional-Derivative law. Algorithm 1 of [1].
     %
-    %   %   Signature:
+    %   Signature:
     %   ----------
     %
     %   miter = (m, n, mInitial, mMin, mMax, mStep,  ...

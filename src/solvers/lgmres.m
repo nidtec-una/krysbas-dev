@@ -1,22 +1,25 @@
 function [x, flag, relresvec, kdvec, time] = ...
-    gmres_e(A, b, m, d, tol, maxit, xInitial, eigstol, varargin)
-    % GMRES-E algorithm
+    lgmres(A, b, m, l, tol, maxit, xInitial, varargin)
+    % LGMRES algorithm
     %
-    %   GMRES-E is a modified implementation of the restarted
+    %   Description:
+    %   ------------
+    %
+    %   LGMRES ("Loose GMRES") is a modified implementation of the restarted
     %   Generalized Minimal Residual Error or GMRES(m) [1], performed by
-    %   appending 'd' eigenvectors corresponding to a few of the smallest
-    %   eigenvalues in magnitude for each outer iteration. In practice, the
-    %   approximate eigenvectors are the harmonic Ritz vectors associated to
-    %   the harmonic Ritz values per outer iteration.
+    %   appending 'l' error approximation vectors to the restarting Krylov
+    %   subspace, as a way to preserve information from previous discarted
+    %   search subspaces from previous iterations of the method.
+    %
+    %   Augments the standard GMRES approximation space with approximations to
+    %   the error from previous restart cycles as in [1].
     %
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relresvec, time] = ...
-    %       gmres_e(A, b, m, k, tol, maxit, xInitial, eigstol)
+    %   [x, flag, relresvec, time] = lgmres(A, b, m, l, tol, maxit, xInitial)
     %
-    %
-    %   Input Parameters:
+    %   Input parameters:
     %   -----------------
     %
     %   A:          n-by-n matrix
@@ -25,19 +28,16 @@ function [x, flag, relresvec, kdvec, time] = ...
     %   b:          n-by-1 vector
     %               Right-hand side of the linear system Ax = b.
     %
-    %   m:          int
-    %               Restart parameter (similar to 'restart' in MATLAB).
-    %               If m == n, built-in unrestarted gmres will be used
+    %   m:          int, optional
+    %               Restart parameter (similar to 'restart' in MATLAB). Default
+    %               is min(n, 10). If m == n, built-in unrestarted gmres will
+    %               be used.
     %
-    %   d:          int
-    %               Number of eigenvectors corresponding to a few of the
-    %               smallest eigenvalues in magnitude for each outer
-    %               iteration. Default is min(m, 3), but values between
-    %               1 and 5 are typical. According to [1], "even just a few
-    %               eigenvectors can make a big difference if the matrix has
-    %               both small and large eigenvalues". If m < n AND d == 0,
-    %               the built-in gmres(m) will be used. If d > m, an error
-    %               is raised.
+    %   l:          int, optional
+    %               Number of error approximation vectors to be appended to the
+    %               Krylov search subspace. Default is 3, but values between 1
+    %               and 5 are mostly used. If m < n AND l == 0, built-in
+    %               gmres(m) will be used.
     %
     %   tol:        float, optional
     %               Tolerance error threshold for the relative residual norm.
@@ -50,11 +50,6 @@ function [x, flag, relresvec, kdvec, time] = ...
     %   xInitial:   n-by-1 vector, optional
     %               Vector of initial guess. Default is zeros(n, 1).
     %
-    %   eigstol:    float, optional
-    %               Tolerance for computing eigenvectors using the built-in
-    %               MATLAB function `eigs`. Default is 1e-6.
-    %
-    %
     %   Output parameters:
     %   ------------------
     %
@@ -65,26 +60,25 @@ function [x, flag, relresvec, kdvec, time] = ...
     %               1 if the algorithm has converged, 0 otherwise.
     %
     %   relresvec:  (1 up to maxit)-by-1 vector
-    %               Vector of relative residual norms of every outer
-    %               iteration (cycles). The last relative residual norm is
-    %               simply given by relresvec(end).
+    %               Vector of relative residual norms of every outer iteration
+    %               (cycles). The last relative residual norm is simply given
+    %               by relresvec(end).
     %
     %   kdvec:      (1 up to maxit)-by-1 vector
     %               For LGMRES, kdvec is a constant vector whose elements
-    %               correspond to the size of the Krylov subspace, i.e.,
-    %               m + d. Note that in some cases, there could be a
-    %               "happy breakdown" where the dimension of the search
-    %               space < m + d.
+    %               correspond to the size of the Krylov subspace, i.e., m + l.
+    %               Note that in some cases, there could be a "happy breakdown"
+    %               where the dimension of the search space < m + l.
     %
-    %   time:       float
+    %   time:       scalar
     %               Computational time in seconds.
     %
     %   References:
     %   -----------
     %
-    %   [1] Morgan, R. B. (1995). A restarted GMRES method augmented with
-    %   eigenvectors. SIAM Journal on Matrix Analysis and Applications,
-    %   16(4), 1154-1171.
+    %   [1] Baker, A. H., Jessup, E. R., & Manteuffel, T. (2005). A technique
+    %   for accelerating the convergence of restarted GMRES. SIAM Journal on
+    %   Matrix Analysis and Applications, 26(4), 962-984.
     %
     %   Copyright:
     %   ----------
@@ -93,10 +87,10 @@ function [x, flag, relresvec, kdvec, time] = ...
     %
     %   Copyright 2023 CC&MA - NIDTec - FP - UNA
     %
-    %   KrySBAS is free software: you can redistribute it and/or modify it
-    %   under the terms of the GNU General Public License as published by the
-    %   Free Software Foundation, either version 3 of the License, or (at
-    %   your option) any later version.
+    %   KrySBAS is free software: you can redistribute it and/or modify it under
+    %   the terms of the GNU General Public License as published by the Free
+    %   Software Foundation, either version 3 of the License, or (at your
+    %   option) any later version.
     %
     %   KrySBAS is distributed in the hope that it will be useful, but WITHOUT
     %   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -110,7 +104,7 @@ function [x, flag, relresvec, kdvec, time] = ...
     % ----> Sanity check on the number of input parameters
     if nargin < 2
         error("Too few input parameters. Expected at least A and b.");
-    elseif nargin > 8
+    elseif nargin > 7
         error("Too many input parameters.");
     end
 
@@ -148,9 +142,9 @@ function [x, flag, relresvec, kdvec, time] = ...
 
     clear rowsb colsb;
 
-    % Special sanity checks for GMRES-E here
+    % Special sanity checks for LGMRES here
 
-    % ----> Default value and sanity checks for m
+    % ----> Default value and sanityu checks for m
     if (nargin < 3) || isempty(m)
         m = min(n, 10);
     end
@@ -176,8 +170,8 @@ function [x, flag, relresvec, kdvec, time] = ...
         return
     end
 
-    % ----> If m < n AND d == 0, built-in gmres(m) will be used
-    if (m < n) && (d == 0)
+    % ----> If m < n AND l == 0, built-in gmres(m) will be used
+    if (m < n) && (l == 0)
         tic();
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b, m);
         time = toc();
@@ -192,14 +186,9 @@ function [x, flag, relresvec, kdvec, time] = ...
         return
     end
 
-    % ----> Default value and sanity checks for d
-    if (nargin < 4) || isempty(d)
-        d = min(m, 3);
-    end
-
-    % ----> d cannot be larger than m
-    if d > m
-        error("d cannot be larger than m");
+    % ----> Default value and sanity checks for l
+    if (nargin < 4) || isempty(l)
+        l = 3;
     end
 
     % Default value and sanity checks for tol
@@ -239,89 +228,71 @@ function [x, flag, relresvec, kdvec, time] = ...
 
     clear rowsxInitial colsxInitial;
 
-    % Default value for eigstol
-    if (nargin < 8) || isempty(eigstol)
-        eigstol = 1e-6;
-    end
+    % ---> LGMRES Algorithm starts here
+    % First outer iteration is a simple restarted GMRES(m) execution
+    % First approximation error vector is created in this stage
 
-    % ---> GMRES-E algorithm starts here
-    % First outer iteration is a simple restarted GMRES(m + k) execution
-    % Afterwards, we can compute the 'd' eigenvectors if convergence is
-    % not achieved.
-
-    % Compute normalized residual vector
-    flag = 0;
+    % Algorithm setup
     restart = 1;
     r0 = b - A * xInitial;
     res(1, :) = norm(r0);
     relresvec(1, :) = (norm(r0) / res(1, 1));
     iter(1, :) = restart;
-    beta = norm(r0);
-    v1 = r0 / beta;
+
+    % Matrix with the history of approximation error vectors
+    zMat = zeros(n, l);
+
+    % while number_of_cycles <= l, we run GMRES(m + l) only
 
     tic(); % start measuring CPU time
 
-    % Modified Gram-Schmidt Arnoldi iteration
-    % This is the first run. Since we don't have
-    % harmonic Ritz vectors yet, we use GMRES(s) = GMRES(m+d).
-    s = m + d;
-    [H, V, sUpdated] = modified_gram_schmidt_arnoldi(A, v1, s);
-
-    % Plane rotations
-    [HUpTri, g] = plane_rotations(H, beta);
-
-    % Solve the least-squares problem
-    s = sUpdated;
-    Rs = HUpTri(1:s, 1:s);
-    gs = g(1:s);
-    minimizer = Rs \ gs;
-    xm = xInitial + V * minimizer;
+    % Call MATLAB built-in gmres.
+    % Ref. [1], pag. 968, recommends GMRES(m + l)
+    % if no enough approximation error vectors are stored yet.
+    [x, gmres_flag, ~, ~, resvec] = ...
+        gmres(A, b, m + l, tol, 1, [], [], xInitial);
 
     % Update residual norm, iterations, and relative residual vector
-    res(restart + 1, :) = abs(g(s + 1, 1));
+    res(restart + 1, :) = resvec(end);
     iter(restart + 1, :) = restart + 1;
-    relresvec(restart + 1, :) = res(restart + 1, :) / res(1, 1);
+    relresvec(size(relresvec, 1) + 1, :) = resvec(end) / res(1, 1);
+    % First approximation error vector
+    zMat(:, restart) = x - xInitial;
 
-    % Check convergence
-    if relresvec(restart + 1, :) < tol
-        % We reached convergence.
-        flag = 1;
-        x = xm;
-        time = toc();
-        kdvec = s .* ones(length(relresvec), 1);
-        return
-    else
-        % We have not reached convergence.
-        % For GMRES-E, an eigenvalue problem is solved.
-        % Eigenvalue problem setup, from [1], p. 1161, step 5
-        Fold = H(1:s, 1:s)';
-        G = Rs' * Rs;
-        dy = harmonic_ritz_vectors(Fold, G, d, V, eigstol);
-
-        % Update and restart.
+    % gmres uses a flag system. We only care whether the solution has
+    % converged or not
+    if gmres_flag ~= 0 % if gmres did not converge
+        flag = 0;
+        xInitial = x;
         restart = restart + 1;
+    else
+        flag = 1;
+        time = toc();
+        kdvec = (m + l) .* ones(length(relresvec), 1);
+        return
     end
 
-    % Empty matrix E for next outer iteration
-    E = zeros(s, d);
-
-    % ---> GMRES-E Algorithm for restart > 1
+    % ---> LGMRES Algorithm for restart > 1 or
+    % LGMRES(m, l)
 
     while flag == 0 && restart <= maxit
 
         % Compute normalized residual vector
-        r = b - A * xm;
+        r = b - A * xInitial;
         beta = norm(r);
         v1 = r / beta;
 
-        % Augmented Gram-Schmidt Arnoldi iteration
-        % Notice that for GMRES-E, we need E,
-        % a n-by-k matrix, the matrix of eigenvectors
-        % from the last outer iteration.
+        % Modified Gram-Schmidt Arnoldi iteration
+        % Notice that for augmented Krylov subspaces, we need zHistory where
+        % zHistory, a n-by-k matrix, is the history of approximation error
+        % vectors from the last outer iterations
+        % For LGMRES we must take in consideration that
+        % s = m + ; is related to the size of
+        % output parameteres H, V
         [H, V, s] = ...
-            augmented_gram_schmidt_arnoldi(A, v1, m, fliplr(dy(:, 1:d)));
-        % Patch: to be solved
-        % Why does the order matter?
+            augmented_gram_schmidt_arnoldi ...
+            (A, v1, m + l - min(restart - 1, l), ...
+             zMat(:, 1:min(restart - 1, l)));
 
         % Plane rotations
         [HUpTri, g] = plane_rotations(H, beta);
@@ -331,39 +302,49 @@ function [x, flag, relresvec, kdvec, time] = ...
         gs = g(1:s);
         minimizer = Rs \ gs;
 
-        % Replace last k vectors from matrix V with the approximate
-        % eigenvectors, and compute the new approximate solution, as done
-        % in step 4, p. 1161 of [1].
-        V(:, m + 1:s) = dy(:, 1:d);
-        x = xm + V * minimizer;
+        % From [1], fig. 1, lines 10 and 12, the n-by-s matrix W is created with
+        % the first m Arnoldi vectors and the l approximation error vectors,
+        % from newest to oldest, zCurrentCycle is the approximation error vector
+        % from the current outer iteration
+        W = zeros(n, s);
+        W(:, 1:m + l - min(restart - 1, l)) = ...
+            V(:, 1:m + l - min(restart - 1, l));
+        W(:, m + l - min(restart - 1, l) + 1:s) = ...
+            fliplr(zMat(:, 1:min(restart - 1, l)));
+        zCurrentCycle = W * minimizer;
+        xm = xInitial + zCurrentCycle;
 
         % Update residual norm, iterations, and relative residual vector
         res(restart + 1, :) = abs(g(s + 1, 1));
         iter(restart + 1, :) = restart + 1;
-        relresvec(restart + 1, :) = ...
-            res(restart + 1, :) / res(1, 1);
+        relresvec(size(relresvec, 1) + 1, :) = res(restart + 1, :) / res(1, 1);
 
         % Check convergence
         if relresvec(restart + 1, 1) < tol
             % We reached convergence.
             flag = 1;
+            x = xm;
+            kdvec = (m + l) .* ones(length(relresvec), 1);
             time = toc();
-            kdvec = s .* ones(length(relresvec), 1);
             return
+        elseif restart <= maxit
+            % We have not reached convergence. Update and restart.
+            xInitial = xm;
 
-        elseif restart < maxit
-            % We have not reached convergence.
-            % Eigenvalue problem setup, from [1], p. 1161, step 5
-            W = V(1:n, 1:s);
-            Fold = W' * A' * W;
-            G = Rs' * Rs;
-            dy = harmonic_ritz_vectors(Fold, G, d, V, tol);
+            % Storage of approximation error vector
+            if restart <= l
+                zMat(:, restart) = zCurrentCycle;
+            else
+                zMat(:, 1:l - 1) = zMat(:, 2:l);
+                zMat(:, l) = zCurrentCycle;
+            end
+
+            restart = restart + 1;
         end
 
-        % Update and restart.
-        xm = x;
-        restart = restart + 1;
     end
-    kdvec = s .* ones(length(relresvec), 1);
+
+    kdvec = (m + l) .* ones(length(relresvec), 1);
     time = toc();
+
 end
