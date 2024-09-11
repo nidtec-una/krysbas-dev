@@ -1,7 +1,5 @@
-function [H, V, s] = ...
-    augmented_gram_schmidt_arnoldi(A, v, m, appendV)
-    % Modified Gram-Schmidt Arnoldi iteration, with
-    % Krylov subspace augmentation
+function [H, V, s] = augmented_gram_schmidt_arnoldi(A, v, m, appendV)
+    % Modified Gram-Schmidt Arnoldi iteration, with Krylov subspace augmentation
     %
     %   Description:
     %   ------------
@@ -12,8 +10,7 @@ function [H, V, s] = ...
     %   Syntaxis:
     %   ---------
     %
-    %   [H, V, s] = ...
-    %       augmented_gram_schmidt_arnoldi(A, v, m, appendV)
+    %   [H, V, s] = augmented_gram_schmidt_arnoldi(A, v, m, appendV)
     %
     %   Input parameters:
     %   -----------------

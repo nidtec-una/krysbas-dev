@@ -1,4 +1,4 @@
-function test_suite = test_lgmres %#ok<*STOUT>
+function test_suite = test_gmres_e %#ok<*STOUT>
     %
     %   Modified from:
     %   https://github.com/Remi-Gau/template_matlab_analysis
@@ -39,15 +39,15 @@ function test_number_of_input_arguments()
     % Test if error is raised when passing incorrect number of inputs.
     % Error should be raised since 1 parameter is given
     try
-        lgmres(ones(2, 2));
+        gmres_e(ones(2, 2));
     catch ME
         msg = "Too few input parameters. Expected at least A and b.";
         assert(matches(ME.message, msg));
     end
 
-    % Error should be raised since 8 parameters are given
+    % Error should be raised since 9 parameters are given
     try
-        lgmres([], [], [], [], [], [], [], []);
+        gmres_e([], [], [], [], [], [], [], [], []);
     catch ME
         msg = "Too many input parameters.";
         assert(matches(ME.message, msg));
@@ -57,7 +57,7 @@ end
 function test_empty_matrix_A()
     % Test if error is raised when an empty matrix A is given.
     try
-        lgmres([], 1);
+        gmres_e([], 1);
     catch ME
         msg = 'Matrix A cannot be empty.';
         assert(matches(ME.message, msg));
@@ -67,7 +67,7 @@ end
 function test_non_square_matrix_A()
     % Test if error is raised when matrix A is not squared
     try
-        lgmres([1; 1], [1; 1]);
+        gmres_e([1; 1], [1; 1]);
     catch ME
         msg = "Matrix A must be square.";
         assert(matches(ME.message, msg));
@@ -77,7 +77,7 @@ end
 function test_empty_vector_b()
     % Test if error is raised when vector b is empty
     try
-        lgmres(1, []);
+        gmres_e(1, []);
     catch ME
         msg = "Vector b cannot be empty.";
     end
@@ -86,7 +86,7 @@ end
 function test_vector_b_not_column_vector()
     % Test if error is raised when vector b is not a column vector
     try
-        lgmres(ones(2), [1, 1]);
+        gmres_e(ones(2), [1, 1]);
     catch ME
         msg = "Vector b must be a column vector.";
     end
@@ -95,7 +95,7 @@ end
 function test_size_compatibility_between_A_and_b()
     % Test if error is raised when the dimensionality of A and b differs
     try
-        lgmres(ones(3), [1; 1]);
+        gmres_e(ones(3), [1; 1]);
     catch ME
         msg = "Dimension mismatch between matrix A and vector b.";
     end
@@ -108,7 +108,7 @@ function test_default_value_of_m()
     A = eye(3);
     b = ones(3, 1);
 
-    [x, flag, ~, ~, ~] = lgmres(A, b);
+    [x, flag, ~, ~] = gmres_e(A, b);
 
     assertElementsAlmostEqual(x, ones(3, 1));
     assert(flag == 1);
@@ -121,7 +121,7 @@ function test_m_greater_than_size_of_A()
     b = ones(3, 1);
 
     try
-        lgmres(A, b, 4);
+        gmres_e(A, b, 4);
     catch ME
         msg = "m must satisfy: 1 <= m <= n.";
         assert(matches(ME.message, msg));
@@ -136,29 +136,43 @@ function test_full_gmres_when_m_equals_size_of_A()
     b = ones(3, 1);
 
     x1 = gmres(A, b);
-    [x2, flag, relresvec, kdvec, time] = lgmres(A, b, 3, 0);
+    [x2, flag, relresvec, kdvec, time] = gmres_e(A, b, 3, 0);
 
     assertElementsAlmostEqual(x1, x2);
-    assertEqual(kdvec, [3; 3]);
     assert(flag == 1);
     assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertElementsAlmostEqual(kdvec, [3; 3]);
     assert(time > 0 && time < 5);
 end
 
 function test_restarted_gmres_when_m_is_less_than_size_of_A()
-    % Test if built-in restarted GMREs is set
-    % when m < size(A, 1)
+    % Test if built-in restarted GMREs is set when m < size(A, 1)
     A = eye(3);
     b = ones(3, 1);
 
     x1 = gmres(A, b, 2);
-    [x2, flag, relresvec, kdvec, time] = lgmres(A, b, 2, 0);
+    [x2, flag, relresvec, kdvec, time] = gmres_e(A, b, 2, 0);
 
     assertElementsAlmostEqual(x1, x2);
     assert(flag == 1);
-    assertEqual(kdvec, [2; 2]);
     assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertElementsAlmostEqual(kdvec, [2; 2]);
     assert(time > 0 && time < 5);
+end
+
+function test_error_is_raised_if_d_is_greater_than_m()
+    % Test whether the default value of d is employed
+    A = eye(3);
+    b = ones(3, 1);
+    m = 1;
+    d = 2;
+
+    try
+        gmres_e(A, b, m, d);
+    catch ME
+        msg = "d cannot be larger than m";
+        assert(matches(ME.message, msg));
+    end
 end
 
 function test_vector_xInitial_not_column_vector()
@@ -169,7 +183,7 @@ function test_vector_xInitial_not_column_vector()
     x0 = ones(1, 3);
 
     try
-        lgmres(A, b, [], [], [], [], x0);
+        gmres_e(A, b, [], [], [], [], x0);
     catch ME
         msg = "Initial guess xInitial is not a column vector.";
         assert(matches(ME.message, msg));
@@ -184,7 +198,7 @@ function test_size_compatibility_between_A_and_xInitial()
     x0 = ones(2, 1);
 
     try
-        lgmres(A, b, [], [], [], [], x0);
+        gmres_e(A, b, [], [], [], [], x0);
     catch ME
         msg = "Dimension mismatch between matrix A and initial guess xInitial.";
         assert(matches(ME.message, msg));
@@ -197,21 +211,17 @@ function test_outputs_unrestarted_identity_matrix() % Linear system # 1
     % matrix when the unrestarted algorithm is called
 
     % Setup a trivial linear system
-    n = 100;
-    A = eye(n);
-    b = ones(n, 1);
-    m = 27;
-    l = 3;
-    xInitial = zeros(n, 1);
+    A = eye(3);
+    b = ones(3, 1);
 
-    % Call LGMRES
-    [x, flag, relresvec, kdvec, time] = lgmres(A, b, m, l, 1e-6, 100, xInitial);
+    % Call GMRES-E
+    [x, flag, relresvec, kdvec, time] = gmres_e(A, b);
 
     % Compare with expected outputs
-    assertElementsAlmostEqual(x, ones(n, 1));
+    assertElementsAlmostEqual(x, ones(3, 1));
     assert(flag == 1);
-    assertEqual(kdvec, [m + l; m + l]);
     assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertElementsAlmostEqual(kdvec, [3; 3]);
     assert(time > 0 && time < 5);
 end
 
@@ -221,19 +231,48 @@ function test_outputs_restarted_identity_matrix() % Linear system # 2
     % matrix when the restarted algorithm is called
 
     % Setup a trivial linear system
-    n = 3;
-    A = eye(n);
+    A = eye(3);
     b = [2; 3; 4];
-    xInitial = zeros(n, 1);
 
-    % Call LGMRES
-    [x, flag, relresvec, kdvec, time] = lgmres(A, b, 2, 1, 1e-6, 100, xInitial);
+    % Setup GMRES-E
+    m = 1;
+    d = 1;
+    tol = 1e-9;
+    maxit = 100;
+
+    % Call GMRES-E
+    [x, flag, relresvec, kdvec, time] = gmres_e(A, b, m, d, tol, maxit, []);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [2; 3; 4]);
     assert(flag == 1);
-    assertEqual(kdvec, [3; 3]);
     assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertElementsAlmostEqual(kdvec, [1; 1]);  % happy breakdown
+    assert(time > 0 && time < 5);
+
+end
+
+function test_issue_68() % Linear system # 2
+    % Test whether the bugfix resolves the issue #68 or not
+
+    % Setup a trivial linear system
+    A = eye(3);
+    b = [2; 3; 4];
+
+    % Setup GMRES-E
+    m = 2;
+    d = 1;
+    tol = 1e-9;
+    maxit = 100;
+
+    % Call GMRES-E
+    [x, flag, relresvec, kdvec, time] = gmres_e(A, b, m, d, tol, maxit, []);
+
+    % Compare with expected outputs
+    assertElementsAlmostEqual(x, [2; 3; 4]);
+    assert(flag == 1);
+    assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertElementsAlmostEqual(kdvec, [1; 1]);  % happy breakdown
     assert(time > 0 && time < 5);
 
 end
@@ -246,62 +285,65 @@ function test_embree_3x3_toy_example()
     A = Problem.A;
     b = Problem.b;
 
-    % Setup LGMRES
+    % Setup GMRES-E
     m = 2;
-    l = 1;
+    d = 1;
     tol = 1e-6;
     maxit = 100;
 
-    % Call LGMRES
-    [x, flag, ~, ~, ~] = lgmres(A, b, m, l, tol, maxit);
+    % Call GMRES-E
+    [x, flag, ~, ~, time] = gmres_e(A, b, m, d, tol, maxit);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [8; -7; 1]);
     assertEqual(flag, 1);
-
+    assert(time > 0 && time < 100);
 end
 
 function test_sherman1()
-    % Test lgmres with sherman1 matrix
+    % Test GMRES-E with sherman1 matrix
 
     % Load A and b
     load('data/sherman1.mat', 'Problem');
     A = Problem.A;
     b = Problem.b;
 
-    % Setup LGMRES
+    % Setup GMRES-E
     m = 27;
-    l = 3;
+    d = 3;
     tol = 1e-12;
     maxit = 1000;
 
-    % Call LGMRES
-    [~, flag, relresvec, ~, ~] = lgmres(A, b, m, l, tol, maxit);
+    % Call GMRES-E
+    [~, flag, relresvec, kdvec, time] = gmres_e(A, b, m, d, tol, maxit);
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
-    assertEqual(size(relresvec, 1), 39);
+    assertEqual(size(relresvec, 1), 60);
+    assertElementsAlmostEqual(kdvec, (m + d) * ones(60, 1));
+    assert(time > 0 && time < 100);
 end
 
 function test_sherman4()
-    % Test lgmres with sherman4 matrix
+    % Test GMRES-E with sherman4 matrix
 
     % Load A and b
     load('data/sherman4.mat', 'Problem');
     A = Problem.A;
     b = Problem.b;
 
-    % Setup LGMRES
+    % Setup GMRES-E
     m = 27;
-    l = 3;
+    d = 3;
     tol = 1e-12;
     maxit = 1000;
 
-    % Call LGMRES
-    [~, flag, relresvec, ~, ~] = ...
-            lgmres(A, b, m, l, tol, maxit);
+    % Call GMRES-E
+    [~, flag, relresvec, kdvec, time] = gmres_e(A, b, m, d, tol, maxit);
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
-    assertEqual(size(relresvec, 1), 18);
+    assertEqual(size(relresvec, 1), 10);
+    assertElementsAlmostEqual(kdvec, (m + d) * ones(10, 1));
+    assert(time > 0 && time < 100);
 end
