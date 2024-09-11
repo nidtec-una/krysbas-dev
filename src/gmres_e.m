@@ -233,24 +233,27 @@ function [x, flag, relresvec, time] = ...
     iter(1, :) = restart;
     beta = norm(r0);
     v1 = r0 / beta;
-    s = m; % s = m + k
 
     tic(); % start measuring CPU time
 
     % Modified Gram-Schmidt Arnoldi iteration
-    [H, V, ~] = modified_gram_schmidt_arnoldi(A, v1, s);
+    % This is the first run. Since we don't have
+    % harmonic Ritz vectors yet, we use GMRES(m + k).
+    s = m + k;
+    [H, V, sUpdated] = modified_gram_schmidt_arnoldi(A, v1, s);
 
     % Plane rotations
     [HUpTri, g] = plane_rotations(H, beta);
 
     % Solve the least-squares problem
+    s = sUpdated;
     Rs = HUpTri(1:s, 1:s);
     gs = g(1:s);
     minimizer = Rs \ gs;
     xm = xInitial + V * minimizer;
 
     % Update residual norm, iterations, and relative residual vector
-    res(restart + 1, :) = abs(g(m + 1, 1));
+    res(restart + 1, :) = abs(g(s + 1, 1));
     iter(restart + 1, :) = restart + 1;
     relresvec(restart + 1, :) = res(restart + 1, :) / res(1, 1);
 
