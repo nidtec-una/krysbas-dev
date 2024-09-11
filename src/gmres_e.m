@@ -2,6 +2,9 @@ function [x, flag, relresvec, kdvec, time] = ...
     gmres_e(A, b, m, d, tol, maxit, xInitial, eigstol, varargin)
     % GMRES-E algorithm
     %
+    %   Description:
+    %   ------------
+    %
     %   GMRES-E is a modified implementation of the restarted
     %   Generalized Minimal Residual Error or GMRES(m) [1], performed by
     %   appending 'd' eigenvectors corresponding to a few of the smallest

@@ -2,6 +2,9 @@ function [x, flag, relresvec, kdvec, time] = ...
     lgmres(A, b, m, l, tol, maxit, xInitial, varargin)
     % LGMRES algorithm
     %
+    %   Description:
+    %   ------------
+    %
     %   LGMRES ("Loose GMRES") is a modified implementation of the restarted
     %   Generalized Minimal Residual Error or GMRES(m) [1], performed by
     %   appending 'l' error approximation vectors to the restarting Krylov

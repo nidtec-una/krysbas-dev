@@ -3,6 +3,9 @@ function [x, flag, relresvec, kdvec, time] = ...
              varargin)
     % PD-GMRES Proportional-Derivative GMRES(m)
     %
+    %   Description:
+    %   ------------
+    %
     %   pd_gmres is a modified implementation of the restarted Generalized
     %   Minimal Residual Error or GMRES(m) [1], performed by using a
     %   proportional-derivative control-inspired law to update adaptively the
