@@ -235,6 +235,30 @@ function test_outputs_restarted_identity_matrix() % Linear system # 2
 
 end
 
+function test_issue_68() % Linear system # 2
+    % Test whether the bugfix resolves the issue #68 or not
+
+    % Setup a trivial linear system
+    A = eye(3);
+    b = [2; 3; 4];
+
+    % Setup GMRES-E
+    m = 2;
+    k = 1;
+    tol = 1e-9;
+    maxit = 100;
+
+    % Call GMRES-E
+    [x, flag, relresvec, time] = gmres_e(A, b, m, k, tol, maxit, []);
+
+    % Compare with expected outputs
+    assertElementsAlmostEqual(x, [2; 3; 4]);
+    assert(flag == 1);
+    assertElementsAlmostEqual(relresvec, [1; 0]);
+    assert(time > 0 && time < 5);
+
+end
+
 function test_embree_three_by_three_toy_example()
     % Test Embree's 3x3 linear system from https://www.jstor.org/stable/25054403
 
