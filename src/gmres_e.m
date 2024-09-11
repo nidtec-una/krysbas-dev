@@ -267,7 +267,7 @@ function [x, flag, relresvec, time] = ...
         % Eigenvalue problem setup, from [1], p. 1161, step 5
         Fold = H(1:s, 1:s)';
         G = Rs' * Rs;
-        dy = harmonic_ritz_vectors(Fold, G, k, s, V, tol);
+        dy = harmonic_ritz_vectors(Fold, G, k, V, tol);
 
         % Update and restart.
         restart = restart + 1;
@@ -325,7 +325,7 @@ function [x, flag, relresvec, time] = ...
             W = V(1:n, 1:s);
             Fold = W' * A' * W;
             G = Rs' * Rs;
-            dy = harmonic_ritz_vectors(Fold, G, k, s, V, tol);
+            dy = harmonic_ritz_vectors(Fold, G, k, V, tol);
         end
 
         % Update and restart.
