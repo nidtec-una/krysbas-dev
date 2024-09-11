@@ -1,13 +1,22 @@
 Function description
 ********************
 
-List of functions in the ``src`` folder.
+List of solvers in ``src.solvers``
+----------------------------------
 
-----
-
-.. automodule:: src
+.. automodule:: src.solvers
 
 .. autofunction:: pd_gmres
+.. autofunction:: lgmres
+.. autofunction:: gmres_e
+
+List of utility functions in ``src.utils``
+------------------------------------------
+
+.. automodule:: src.utils
+
+.. autofunction:: augmented_gram_schmidt_arnoldi
+.. autofunction:: harmonic_ritz_vectors
 .. autofunction:: modified_gram_schmidt_arnoldi
 .. autofunction:: pd_rule
 .. autofunction:: plane_rotations

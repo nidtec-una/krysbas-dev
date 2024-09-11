@@ -23,7 +23,7 @@ copyright = "CCyMA (2024)"
 author = "J. Varela, G. Espínola and J. C. Cabral"
 
 # The full version, including alpha/beta/rc tags
-release = "v0.1.0"
+release = "v0.3.0"
 
 
 # -- General configuration ---------------------------------------------------
