@@ -1,13 +1,13 @@
 function [x, flag, relresvec, time] = ...
-    gmres_e(A, b, m, k, tol, maxit, xInitial, varargin)
+    gmres_e(A, b, m, d, tol, maxit, xInitial, varargin)
     % GMRES-E algorithm
     %
     %   GMRES-E is a modified implementation of the restarted
     %   Generalized Minimal Residual Error or GMRES(m) [1], performed by
-    %   appending 'k' eigenvectors corresponding to a few of the smallest
-    %   eigenvalues in magnitude for each outer iteration. In practice,
-    %   the approximate eigenvectors are the harmonic Ritz vectors
-    %   associated to the harmonic Ritz values per outer iteration.
+    %   appending 'd' eigenvectors corresponding to a few of the smallest
+    %   eigenvalues in magnitude for each outer iteration. In practice, the 
+    %   approximate eigenvectors are the harmonic Ritz vectors associated to the
+    %   harmonic Ritz values per outer iteration.
     %
     %   Signature:
     %   ----------
@@ -28,15 +28,14 @@ function [x, flag, relresvec, time] = ...
     %               Restart parameter (similar to 'restart' in MATLAB).
     %               If m == n, built-in unrestarted gmres will be used
     %
-    %   k:          int
-    %               Number of eigenvectors corresponding to
-    %               a few of the smallest eigenvalues in magnitude
-    %               for each outer iteration. Default is 3, but values
-    %               between 1 and 5 are mostly used.
+    %   d:          int
+    %               Number of eigenvectors corresponding to a few of the
+    %               smallest eigenvalues in magnitude for each outer iteration.
+    %               Default is 3, but values between 1 and 5 are typical.
     %               According to [1], "even just a few eigenvectors can make
     %               a big difference if the matrix has both small and large
-    %               eigenvalues".
-    %               If m < n AND k == 0, built-in gmres(m) will be used.
+    %               eigenvalues". Note that if m < n AND k == 0, the built-in
+    %               gmres(m) will be used.
     %
     %   tol:        float, optional
     %               Tolerance error threshold for the relative residual norm.
@@ -162,8 +161,8 @@ function [x, flag, relresvec, time] = ...
         return
     end
 
-    % ----> If m < n AND k == 0, built-in gmres(m) will be used
-    if (m < n) && (k == 0)
+    % ----> If m < n AND d == 0, built-in gmres(m) will be used
+    if (m < n) && (d == 0)
         tic();
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b, m);
         time = toc();
@@ -177,9 +176,9 @@ function [x, flag, relresvec, time] = ...
         return
     end
 
-    % ----> Default value and sanity checks for k
-    if (nargin < 4) || isempty(k)
-        k = 3;
+    % ----> Default value and sanity checks for d
+    if (nargin < 4) || isempty(d)
+        d = 3;
     end
 
     % Default value and sanity checks for tol
@@ -219,9 +218,9 @@ function [x, flag, relresvec, time] = ...
 
     clear rowsxInitial colsxInitial;
 
-    % ---> GMRES-E Algorithm starts here
+    % ---> GMRES-E algorithm starts here
     % First outer iteration is a simple restarted GMRES(m + k) execution
-    % Then we can compute the 'k' eigenvectors if convergence is
+    % Afterwards, we can compute the 'd' eigenvectors if convergence is 
     % not achieved.
 
     % Compute normalized residual vector
@@ -238,8 +237,8 @@ function [x, flag, relresvec, time] = ...
 
     % Modified Gram-Schmidt Arnoldi iteration
     % This is the first run. Since we don't have
-    % harmonic Ritz vectors yet, we use GMRES(m + k).
-    s = m + k;
+    % harmonic Ritz vectors yet, we use GMRES(s) = GMRES(m+d).
+    s = m + d;
     [H, V, sUpdated] = modified_gram_schmidt_arnoldi(A, v1, s);
 
     % Plane rotations
@@ -270,14 +269,14 @@ function [x, flag, relresvec, time] = ...
         % Eigenvalue problem setup, from [1], p. 1161, step 5
         Fold = H(1:s, 1:s)';
         G = Rs' * Rs;
-        dy = harmonic_ritz_vectors(Fold, G, k, V, tol);
+        dy = harmonic_ritz_vectors(Fold, G, d, V, tol);
 
         % Update and restart.
         restart = restart + 1;
     end
 
     % Empty matrix E for next outer iteration
-    E = zeros(s, k);
+    E = zeros(s, d);
 
     % ---> GMRES-E Algorithm for restart > 1
 
@@ -293,7 +292,7 @@ function [x, flag, relresvec, time] = ...
         % a n-by-k matrix, the matrix of eigenvectors
         % from the last outer iteration.
         [H, V, s] = ...
-            augmented_gram_schmidt_arnoldi(A, v1, m, fliplr(dy(:, 1:k)));
+            augmented_gram_schmidt_arnoldi(A, v1, m, fliplr(dy(:, 1:d)));
         % Patch: to be solved
         % Why does the order matter?
 
@@ -306,7 +305,7 @@ function [x, flag, relresvec, time] = ...
         minimizer = Rs \ gs;
 
         % Re-write last k vectors???
-        V(:, m + 1:s) = dy(:, 1:k);
+        V(:, m + 1:s) = dy(:, 1:d);
         x = xm + V * minimizer;
 
         % Update residual norm, iterations, and relative residual vector
@@ -328,7 +327,7 @@ function [x, flag, relresvec, time] = ...
             W = V(1:n, 1:s);
             Fold = W' * A' * W;
             G = Rs' * Rs;
-            dy = harmonic_ritz_vectors(Fold, G, k, V, tol);
+            dy = harmonic_ritz_vectors(Fold, G, d, V, tol);
         end
 
         % Update and restart.
