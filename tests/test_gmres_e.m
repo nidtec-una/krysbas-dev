@@ -136,11 +136,12 @@ function test_full_gmres_when_m_equals_size_of_A()
     b = ones(3, 1);
 
     x1 = gmres(A, b);
-    [x2, flag, relresvec, time] = gmres_e(A, b, 3, 0);
+    [x2, flag, relresvec, kdvec, time] = gmres_e(A, b, 3, 0);
 
     assertElementsAlmostEqual(x1, x2);
     assert(flag == 1);
     assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertElementsAlmostEqual(kdvec, [3; 3])
     assert(time > 0 && time < 5);
 end
 
@@ -150,11 +151,12 @@ function test_restarted_gmres_when_m_is_less_than_size_of_A()
     b = ones(3, 1);
 
     x1 = gmres(A, b, 2);
-    [x2, flag, relresvec, time] = gmres_e(A, b, 2, 0);
+    [x2, flag, relresvec, kdvec, time] = gmres_e(A, b, 2, 0);
 
     assertElementsAlmostEqual(x1, x2);
     assert(flag == 1);
     assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertElementsAlmostEqual(kdvec, [2; 2]);
     assert(time > 0 && time < 5);
 end
 
@@ -213,12 +215,13 @@ function test_outputs_unrestarted_identity_matrix() % Linear system # 1
     b = ones(3, 1);
 
     % Call GMRES-E
-    [x, flag, relresvec, time] = gmres_e(A, b);
+    [x, flag, relresvec, kdvec, time] = gmres_e(A, b);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, ones(3, 1));
     assert(flag == 1);
     assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertElementsAlmostEqual(kdvec, [3; 3]);
     assert(time > 0 && time < 5);
 end
 
@@ -232,19 +235,19 @@ function test_outputs_restarted_identity_matrix() % Linear system # 2
     b = [2; 3; 4];
 
     % Setup GMRES-E
-    % BUG: This does not for m = 2 (See Issue #68 on GH)
     m = 1;
-    k = 1;
+    d = 1;
     tol = 1e-9;
     maxit = 100;
 
     % Call GMRES-E
-    [x, flag, relresvec, time] = gmres_e(A, b, m, k, tol, maxit, []);
+    [x, flag, relresvec, kdvec, time] = gmres_e(A, b, m, d, tol, maxit, []);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [2; 3; 4]);
     assert(flag == 1);
     assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertElementsAlmostEqual(kdvec, [1; 1]);  % happy breakdown
     assert(time > 0 && time < 5);
 
 end
@@ -258,17 +261,18 @@ function test_issue_68() % Linear system # 2
 
     % Setup GMRES-E
     m = 2;
-    k = 1;
+    d = 1;
     tol = 1e-9;
     maxit = 100;
 
     % Call GMRES-E
-    [x, flag, relresvec, time] = gmres_e(A, b, m, k, tol, maxit, []);
+    [x, flag, relresvec, kdvec, time] = gmres_e(A, b, m, d, tol, maxit, []);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [2; 3; 4]);
     assert(flag == 1);
     assertElementsAlmostEqual(relresvec, [1; 0]);
+    assertElementsAlmostEqual(kdvec, [1; 1]);  % happy breakdown
     assert(time > 0 && time < 5);
 
 end
@@ -283,12 +287,12 @@ function test_embree_3x3_toy_example()
 
     % Setup GMRES-E
     m = 2;
-    k = 1;
+    d = 1;
     tol = 1e-6;
     maxit = 100;
 
     % Call GMRES-E
-    [x, flag, ~, time] = gmres_e(A, b, m, k, tol, maxit);
+    [x, flag, ~, ~, time] = gmres_e(A, b, m, d, tol, maxit);
 
     % Compare with expected outputs
     assertElementsAlmostEqual(x, [8; -7; 1]);
@@ -306,16 +310,17 @@ function test_sherman1()
 
     % Setup GMRES-E
     m = 27;
-    k = 3;
+    d = 3;
     tol = 1e-12;
     maxit = 1000;
 
     % Call GMRES-E
-    [~, flag, relresvec, time] = gmres_e(A, b, m, k, tol, maxit);
+    [~, flag, relresvec, kdvec, time] = gmres_e(A, b, m, d, tol, maxit);
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
     assertEqual(size(relresvec, 1), 60);
+    assertElementsAlmostEqual(kdvec, (m+d) * ones(60, 1))
     assert(time > 0 && time < 100);
 end
 
@@ -329,15 +334,16 @@ function test_sherman4()
 
     % Setup GMRES-E
     m = 27;
-    k = 3;
+    d = 3;
     tol = 1e-12;
     maxit = 1000;
 
     % Call GMRES-E
-    [~, flag, relresvec, time] = gmres_e(A, b, m, k, tol, maxit);
+    [~, flag, relresvec, kdvec, time] = gmres_e(A, b, m, d, tol, maxit);
 
     % We check if it has converged and the total sum of outer iterations
     assertEqual(flag, 1);
     assertEqual(size(relresvec, 1), 10);
+    assertElementsAlmostEqual(kdvec, (m+d) * ones(10, 1))
     assert(time > 0 && time < 100);
 end

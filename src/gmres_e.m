@@ -1,4 +1,4 @@
-function [x, flag, relresvec, time] = ...
+function [x, flag, relresvec, kdvec, time] = ...
     gmres_e(A, b, m, d, tol, maxit, xInitial, eigstol, varargin)
     % GMRES-E algorithm
     %
@@ -67,6 +67,12 @@ function [x, flag, relresvec, time] = ...
     %               Vector of relative residual norms of every outer iteration
     %               (cycles). The last relative residual norm is simply given
     %               by relresvec(end).
+    %
+    %   kdvec:      (1 up to maxit)-by-1 vector
+    %               For LGMRES, kdvec is a constant vector whose elements
+    %               correspond to the size of the Krylov subspace, i.e., m + d. 
+    %               Note that in some cases, there could be a "happy breakdown"
+    %               where the dimension of the search space < m + d.
     %
     %   time:       float
     %               Computational time in seconds.
@@ -164,6 +170,7 @@ function [x, flag, relresvec, time] = ...
             flag = 0;
         end
         relresvec = resvec ./ resvec(1, 1);
+        kdvec = m .* ones(length(relresvec), 1);
         return
     end
 
@@ -179,6 +186,7 @@ function [x, flag, relresvec, time] = ...
             flag = 0;
         end
         relresvec = resvec ./ resvec(1, 1);
+        kdvec = m .* ones(length(relresvec), 1);
         return
     end
 
@@ -278,6 +286,7 @@ function [x, flag, relresvec, time] = ...
         flag = 1;
         x = xm;
         time = toc();
+        kdvec = s .* ones(length(relresvec), 1);
         return
     else
         % We have not reached convergence.
@@ -323,7 +332,7 @@ function [x, flag, relresvec, time] = ...
         % Replace last k vectors from matrix V with the approximate
         % eigenvectors, and compute the new approximate solution, as done
         % in step 4, p. 1161 of [1].
-        V(:, m + 1:s) = dy(:, 1:k);
+        V(:, m + 1:s) = dy(:, 1:d);
         x = xm + V * minimizer;
 
         % Update residual norm, iterations, and relative residual vector
@@ -337,6 +346,7 @@ function [x, flag, relresvec, time] = ...
             % We reached convergence.
             flag = 1;
             time = toc();
+            kdvec = s .* ones(length(relresvec), 1);
             return
 
         elseif restart < maxit
@@ -352,5 +362,6 @@ function [x, flag, relresvec, time] = ...
         xm = x;
         restart = restart + 1;
     end
+    kdvec = s .* ones(length(relresvec), 1);
     time = toc();
 end
