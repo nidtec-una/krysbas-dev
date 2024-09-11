@@ -1,5 +1,5 @@
 function [x, flag, relresvec, time] = ...
-    gmres_e(A, b, m, d, tol, maxit, xInitial, varargin)
+    gmres_e(A, b, m, d, tol, maxit, xInitial, eigstol, varargin)
     % GMRES-E algorithm
     %
     %   GMRES-E is a modified implementation of the restarted
@@ -12,7 +12,8 @@ function [x, flag, relresvec, time] = ...
     %   Signature:
     %   ----------
     %
-    %   [x, flag, relresvec, time] = gmres_e(A, b, m, k, tol, maxit, xInitial)
+    %   [x, flag, relresvec, time] = ...
+    %       gmres_e(A, b, m, k, tol, maxit, xInitial, eigstol)
     %
     %
     %   Input Parameters:
@@ -48,6 +49,11 @@ function [x, flag, relresvec, time] = ...
     %   xInitial:   n-by-1 vector, optional
     %               Vector of initial guess. Default is zeros(n, 1).
     %
+    %   eigstol:    float, optional
+    %               Tolerance for computing eigenvectors using the built-in
+    %               MATLAB function `eigs`. Deault is 1e-6.
+    %
+    %
     %   Output parameters:
     %   ------------------
     %
@@ -57,12 +63,12 @@ function [x, flag, relresvec, time] = ...
     %   flag:       boolean
     %               1 if the algorithm has converged, 0 otherwise.
     %
-    %   relresvec: (1 up to maxit)-by-1 vector
+    %   relresvec:  (1 up to maxit)-by-1 vector
     %               Vector of relative residual norms of every outer iteration
     %               (cycles). The last relative residual norm is simply given
     %               by relresvec(end).
     %
-    %   time:       scalar
+    %   time:       float
     %               Computational time in seconds.
     %
     %   References:
@@ -96,7 +102,7 @@ function [x, flag, relresvec, time] = ...
     % ----> Sanity check on the number of input parameters
     if nargin < 2
         error("Too few input parameters. Expected at least A and b.");
-    elseif nargin > 7
+    elseif nargin > 8
         error("Too many input parameters.");
     end
 
@@ -223,6 +229,11 @@ function [x, flag, relresvec, time] = ...
 
     clear rowsxInitial colsxInitial;
 
+    % Default value for eigstol
+    if (nargin < 8) || isempty(eigstol)
+        eigstol = 1e-6;
+    end
+
     % ---> GMRES-E algorithm starts here
     % First outer iteration is a simple restarted GMRES(m + k) execution
     % Afterwards, we can compute the 'd' eigenvectors if convergence is
@@ -274,7 +285,7 @@ function [x, flag, relresvec, time] = ...
         % Eigenvalue problem setup, from [1], p. 1161, step 5
         Fold = H(1:s, 1:s)';
         G = Rs' * Rs;
-        dy = harmonic_ritz_vectors(Fold, G, d, V, tol);
+        dy = harmonic_ritz_vectors(Fold, G, d, V, eigstol);
 
         % Update and restart.
         restart = restart + 1;
