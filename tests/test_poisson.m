@@ -459,3 +459,184 @@ function test_poisson_2d_left_to_right_flow()
     assertElementsAlmostEqual(uLGMRES, uExact);
     assertElementsAlmostEqual(uGMRESE, uExact);
 end
+
+function test_minimal_poisson_2d_mole()
+    % 2D Staggering example using a 2D Mimetic laplacian
+
+    clear;
+    clc;
+    close all;
+
+    % REEMPLAZAR CON cd (path_to_mole) O EQUIVALENTE
+    cd; % path_to_mole
+
+    k = 4; % Order of accuracy, original: 2
+    mx = 256; % Vertical resolution, original: 5
+    ny = 256; % Horizontal resolution, original: 6
+
+    L = lap2D(k, mx, 1, ny, 1); % 2D Mimetic laplacian operator
+    L = L + robinBC2D(k, mx, 1, ny, 1, 1, 0); % Dirichlet BC
+    % Check how to setup Robin
+
+    CondLNoPrec = condest(L);
+
+    RHS = zeros(mx + 2, ny + 2);
+
+    RHS(1, :) = 100; % Known value at the bottom boundary
+
+    RHS = reshape(RHS, [], 1);
+    tic;
+    SOL = L \ RHS; % Here we'll introduce our adaptive iterative method
+    toc;
+    SOL = reshape(SOL, mx + 2, ny + 2);
+
+    % Preconditioners: Jacobi, SOR, etc.
+    % Jacobi
+    M_jacobi = (diag(diag(L)))^-1;
+    L = M_jacobi * L;
+    RHS = M_jacobi * RHS;
+    CondLpostJacobi = condest(L);
+
+    % Gauss-Seidel
+    % M_GS = (tril(L1))^-1;
+    % L= M_GS*L1;
+    % RHS = M_GS*RHS1;
+    % CondLpostGS = condest(L);
+
+    % SOR
+    % n=size(L);
+    % tStart=tic;
+    % omega=1;
+    % D=diag(diag(L));
+    % L=-(tril(L)-D);
+    % M_sor=(1/omega)*D-L;
+    % L=M_sor\L;
+    % RHS=M_sor\RHS;
+
+    % % Preconditioner ILU for GMRES & BICG
+    % setup.type = 'ilutp';
+    % setup.droptol = 1e-6;
+    % setup.udiag=1;
+    % disp('ILU')
+    % tic
+    % [LT,UT] = ilu(sparse(L), setup);
+    % timeILU = toc();
+    % disp(timeILU)
+    % M=LT * UT;
+    % %         clear L U;
+    %
+    % disp('INVERSAS')
+    % tic
+    % % Is there an alternative?
+    % L=M\L;
+    % RHS=M\RHS;
+    % timeMatMul = toc();
+    % disp(timeMatMul)
+    % CondLpostILU = condest(L);
+
+    % CALL TO THE ITERATIVE METHODS
+    tol = 1e-9;
+    maxit = 100;
+
+    % REEMPLAZAR CON cd (path_to_solvers) O EQUIVALENTE
+    cd; % path_to_solvers
+
+    % GMRES
+    m = 30;
+    [SOL0, flag0, relres0, iter0, resvec0] = ...
+        gmres(L, RHS, m, tol, maxit);
+
+    % PD_GMRES
+    mInitial = 30;
+    disp('PD-GMRES');
+    [SOL1, flag1, relresvec1, mvec, time1] = ...
+        pd_gmres(L, RHS, mInitial, [], [], tol, maxit, [], [1, 1]);
+    disp(time1);
+    figure(1);
+    semilogy(relresvec1, 'r');
+    hold on;
+    SOL1RS = reshape(SOL1, mx + 2, ny + 2);
+
+    % LGMRES
+    m = 27;
+    k = 3;
+    disp('LGMRES');
+    [SOL2, flag2, relresvec2, time2] = ...
+        lgmres(L, RHS, m, k, tol, maxit);
+    disp(time2);
+    semilogy(relresvec2, 'g');
+    SOL2RS = reshape(SOL2, mx + 2, ny + 2);
+
+    % GMRES-E
+    m = 27;
+    k = 3;
+    disp('GMRES-E');
+    [SOL3, flag3, relresvec3, time3] = ...
+        gmres_e(L, RHS, m, k, tol, maxit);
+    disp(time3);
+    semilogy(relresvec3, 'b');
+    SOL3RS = reshape(SOL3, mx + 2, ny + 2);
+
+    figure(2);
+    plot(mvec);
+
+    figure(3);
+    imagesc(SOL3RS);
+    title('2D Poisson''s equation - Numerical solution');
+    xlabel('x grid point');
+    ylabel('y grid point');
+    set(gca, 'YDir', 'Normal');
+    colorbar;
+
+    % Parameters for built-in MATLAB iterative methods
+    tol = 1e-9;
+    m = 30;
+    maxcycles = 100;
+    maxit = m * maxcycles;
+
+    % GMRES(m)
+    disp('GMRES(m)');
+    tic;
+    [SOLG, flagG, resG, iterG, resvecG] = gmres(L, RHS, m, tol, maxcycles);
+    relresvecG = resvecG ./ norm(RHS);
+    timeG = toc();
+    disp(timeG);
+    SOLGRS = reshape(SOLG, mx + 2, ny + 2);
+
+    % % BICGSTAB
+    % disp('BICG')
+    % tic
+    % [SOL4, flag4, res4 , ITER4, resvec4] = bicg(L, RHS, tol, maxit);
+    % relresvec4 = resvec4 ./ norm(RHS);
+    % time4 = toc();
+    % disp(time4)
+    % SOL4RS = reshape(SOL4, mx+2, ny+2);
+
+    % figure(4)
+    % semilogy(relresvecG, 'r')
+    % semilogy(relresvec4, 'b')
+    % semilogy(relresvecG(1:m:size(relresvecG, 1), 1), 'g')
+    % hold on
+    %
+    % figure(5)
+    % semilogy(relresvecG(1:m:size(relresvecG, 1), 1), 'b')
+    % %semilogy(relresvecG(1:m:10*m+1,1), 'b')
+    % hold on
+    % semilogy(relresvec1, 'r')
+
+    figure(6);
+    % GMRES(m)
+    semilogy(relresvecG(1:m:size(relresvecG, 1), 1), 'r', 'LineWidth', 2);
+    hold on;
+    % PD-GMRES
+    semilogy(relresvec1, 'k', 'LineWidth', 2);
+    % LGMRES
+    semilogy(relresvec2, 'g', 'LineWidth', 2);
+    % GMRES-E
+    semilogy(relresvec3, 'b', 'LineWidth', 2);
+    title('Relative residual norms');
+    xlabel('Number of restarts');
+    ylabel('||r_j||  / ||r_0 ||');
+    legend('GMRES(m)', 'PD-GMRES', 'LGMRES', 'GMRES-E');
+    hold on;
+end
