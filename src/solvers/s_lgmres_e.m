@@ -248,7 +248,7 @@ function [x, flag, relresvec, kdvec, time] = ...
         xInitial = zeros(n, 1);
     end
 
-    % ----> Default value for eps0
+    % ----> Default value for eps0, as chosen in [1].
     if (nargin < 9) || isempty(eps0)
         eps0 = 0.01;
     end
@@ -327,7 +327,7 @@ function [x, flag, relresvec, kdvec, time] = ...
         flag = 1;
         x = xm;
         time = toc();
-        kdvec = s .* ones(length(relresvec), 1);
+        kdvec(restart, 1) = s;
         return
     else
         % We have not reached convergence.
@@ -336,28 +336,19 @@ function [x, flag, relresvec, kdvec, time] = ...
             flag_stagnation = 1;
             Fold = H(1:s, 1:s)';
             G = Rs' * Rs;
+
+            % Compute Harmonic Ritz vectors
             dy = harmonic_ritz_vectors(Fold, G, d, V, eigstol);
 
-            % compute pdrule
-        else
-            % save zCurrentcycle
-        end
-
-        Fold = H(1:s, 1:s)';
-        G = Rs' * Rs;
-        dy = harmonic_ritz_vectors(Fold, G, d, V, eigstol);
-
-        % Control block for 'm'
-        if iter(size(iter, 1), :) ~= 1
+            % Control block for 'm'
             [miter] = pd_rule(m, n, mInitial, mMin, mMax, ...
                               mStep, res, iter(size(iter, 1), :), ...
                               alphaP, alphaD);
-            m = miter(1, 1);
-            mInitial = miter(1, 2);
+            m = miter(1,1);
+            kdvec(iter(size(iter, 1), :) + 1, 1) = m;
         else
-            m = mInitial;
-        end
-        kdvec(iter(size(iter, 1), :) + 1, 1) = m;
+            % save zCurrentCycle
+        end      
 
         % Update and restart.
         restart = restart + 1;
@@ -379,17 +370,78 @@ function [x, flag, relresvec, kdvec, time] = ...
         %   the error approximation vectors,
         % * If flag_stagnation == 1, then we generate the Arnoldi basis using
         %   the harmonic Ritz vectors.
+        %
+        % To be solved: does the order of augmentation vectors (fliplr) matter?
         if flag_stagnation == 0
-            %s = mj + l;
+            % s = m + l;
             [H, V, s] = ...
                 augmented_gram_schmidt_arnoldi(A, v1, m, zMat(:, 1:min(nevec, l)));
         else
-            %s = mj + d;
+            % s = m + d;
             [H, V, s] = ...
                 augmented_gram_schmidt_arnoldi(A, v1, m, fliplr(dy(:, 1:d)));
         end
 
-        % To be continued...
+        % Plane rotations
+        [HUpTri, g] = plane_rotations(H, beta);
+
+        % Solve the least-squares problem
+        Rs = HUpTri(1:s, 1:s);
+        gs = g(1:s);
+        minimizer = Rs \ gs;
+
+        % Replace last vectors of V with the corresponding augmentation
+        % vectors
+        if flag_stagnation ==0
+            % Check this out!
+            V(:, m + l - min(restart - 1, l) + 1:s) = ...
+                fliplr(zMat(:, 1:min(restart - 1, l)));
+        else
+            V(:, m + 1:s) = dy(:, 1:d);
+        end
+
+        % Compute new approximate solution
+        xm = xm + V * minimizer;
+
+        % Update residual norm, iterations, and relative residual vector
+        res(restart + 1, :) = abs(g(s + 1, 1));
+        iter(restart + 1, :) = restart + 1;
+        relresvec(restart + 1, :) = res(restart + 1, :) / res(1, 1);
+        
+        % Check convergence
+        if relresvec(restart + 1, :) < tol
+            % We reached convergence.
+            flag = 1;
+            x = xm;
+            time = toc();
+            kdvec = s .* ones(length(relresvec), 1);
+            return
+        else
+            % We have not reached convergence.
+            % Now, we check for stagnation of the 'minimizer' vector
+            if norm(minimizer) < eps0
+                flag_stagnation = 1;
+                W = V(1:n, 1:s);
+                Fold = W' * A' * W;
+                G = Rs' * Rs;
+
+                % Compute Harmonic Ritz vectors
+                dy = harmonic_ritz_vectors(Fold, G, d, V, eigstol);
+    
+                % Control block for 'm'
+                [miter] = pd_rule(m, n, mInitial, mMin, mMax, ...
+                                  mStep, res, iter(size(iter, 1), :), ...
+                                  alphaP, alphaD);
+                m = miter(1,1);
+                kdvec(restart + 1, 1) = m;
+            else
+                flag_stagnation = 0;
+                % save zCurrentCycle
+            end      
+    
+            % Update and restart.
+            restart = restart + 1;
+        end
 
     end
     
