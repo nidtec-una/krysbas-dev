@@ -12,10 +12,11 @@ include("utils/augmented_gram_schmidt_arnoldi.jl")
 include("utils/harmonic_ritz_vectors.jl")
 include("utils/pd_rule.jl")
 
-# include("solvers/gmres_e.jl")
+include("solvers/gmres_e.jl")
 # include("solvers/lgmres.jl")
 # include("solvers/pd_gmres.jl")
 
-# export gmres_e, lgmres, pd_gmres
+export gmres_e
+# export lgmres, pd_gmres
 
 end
