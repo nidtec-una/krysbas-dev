@@ -9,5 +9,5 @@ addpath(fullfile(root_dir, 'MOcov', 'MOcov'));  % check if this works
 cd(fullfile(root_dir, 'MOxUnit', 'MOxUnit'));
 run moxunit_set_path();
 
-cd(root_dir);
+cd(fullfile(root_dir, 'matlab'));
 run run_tests();
