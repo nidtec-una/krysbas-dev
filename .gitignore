@@ -1,8 +1,9 @@
-/src/*.asv
-/src/PD_GMRES_m_1.*
-/src/PD_GMRES_M_1_test.*
-/src/adaptive_LGMRESE_test.m
-/src/mi_LGMRESE.m
-/src/pdrule.m
-/tests/*.asv
-test_report.log
+# MATLAB
+/matlab/src/*.asv
+/matlab/tests/*.asv
+matlab/test_report.log
+matlab/coverage_html/
+matlab/coverage.xml
+
+# Julia
+julia/Manifest.toml

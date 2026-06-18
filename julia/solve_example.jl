@@ -27,7 +27,7 @@ x_grid = [(i * h) for i in 1:n]
 b = π^2 .* sin.(π .* x_grid)
 
 # ── Solve with GMRES ──────────────────────────────────────────────────────────
-x, stats = Krylov.gmres(A, b; restart=20, rtol=1e-8, verbose=0)
+x, stats = Krylov.gmres(A, b; memory=20, rtol=1e-8, verbose=0)
 
 # ── Report ────────────────────────────────────────────────────────────────────
 u_exact = sin.(π .* x_grid)

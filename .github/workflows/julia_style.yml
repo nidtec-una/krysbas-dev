@@ -1,0 +1,36 @@
+---
+name: julia_style
+
+on:
+  push:
+    branches:
+      - main
+      - julia_migration
+    paths:
+      - '**.jl'
+      - .JuliaFormatter.toml
+      - .github/workflows/julia_style.yml
+  pull_request:
+    branches: ['*']
+    paths:
+      - '**.jl'
+      - .JuliaFormatter.toml
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+
+      - name: Check formatting
+        run: |
+          julia -e '
+            using Pkg
+            Pkg.add("JuliaFormatter")
+            using JuliaFormatter
+            format("julia/", verbose=true) || exit(1)
+          '
