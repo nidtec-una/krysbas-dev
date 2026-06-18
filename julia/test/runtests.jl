@@ -18,7 +18,7 @@ include("test_harmonic_ritz_vectors.jl")
 include("test_pd_rule.jl")
 include("test_gmres_e.jl")
 include("test_lgmres.jl")
-# include("test_pd_gmres.jl")
+include("test_pd_gmres.jl")
 # include("test_poisson.jl")
 
 @testset "KrySBAS.jl" begin

@@ -14,9 +14,8 @@ include("utils/pd_rule.jl")
 
 include("solvers/gmres_e.jl")
 include("solvers/lgmres.jl")
-# include("solvers/pd_gmres.jl")
+include("solvers/pd_gmres.jl")
 
-export gmres_e, lgmres
-# export pd_gmres
+export gmres_e, lgmres, pd_gmres
 
 end
