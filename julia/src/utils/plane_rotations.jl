@@ -5,7 +5,7 @@ function plane_rotations(H::AbstractMatrix, beta::Real)
     g[1] = beta
 
     for j in 1:m
-        denom = sqrt(H[j + 1, j]^2 + H[j, j]^2)
+        denom = hypot(H[j + 1, j], H[j, j])  # avoids sqrt(a²+b²) underflow when a,b are subnormal
         s = H[j + 1, j] / denom
         c = H[j, j] / denom
 
