@@ -9,7 +9,7 @@ using Krylov
 include("utils/plane_rotations.jl")
 include("utils/modified_gram_schmidt_arnoldi.jl")
 include("utils/augmented_gram_schmidt_arnoldi.jl")
-# include("utils/harmonic_ritz_vectors.jl")
+include("utils/harmonic_ritz_vectors.jl")
 # include("utils/pd_rule.jl")
 
 # include("solvers/gmres_e.jl")
