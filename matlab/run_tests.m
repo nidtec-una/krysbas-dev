@@ -31,15 +31,17 @@ function run_tests()
 
     tic;
 
-    cd(fileparts(mfilename('fullpath')));
+    matlab_dir = fileparts(mfilename('fullpath'));
+    cd(matlab_dir);
 
     fprintf('\nHome is %s\n', getenv('HOME'));
 
-    folder_to_cover = fullfile(pwd, 'src');
+    folder_to_cover = fullfile(matlab_dir, 'src');
 
-    test_folder = fullfile(pwd, 'tests');
+    test_folder = fullfile(matlab_dir, 'tests');
 
     addpath(genpath(folder_to_cover));
+    addpath(fullfile(matlab_dir, '..', 'data'));
 
     if ispc
         success = moxunit_runtests(test_folder, '-verbose');

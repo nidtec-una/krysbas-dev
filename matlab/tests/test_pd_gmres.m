@@ -338,7 +338,7 @@ function test_embree_3x3_toy_example()
     % of m to avoid stagnation.
 
     % Load A and b
-    load('data/embree3.mat', 'Problem');
+    load('embree3.mat', 'Problem');
     A = Problem.A;
     b = Problem.b;
 
@@ -379,7 +379,7 @@ function test_sherman1()
     % Test pd_gmres with sherman1 matrix
 
     % Load A and b
-    load('data/sherman1.mat', 'Problem');
+    load('sherman1.mat', 'Problem');
     A = Problem.A;
     b = Problem.b;
 
@@ -403,7 +403,7 @@ function test_sherman4()
     % Test pd_gmres with sherman4 matrix
 
     % Load A and b
-    load('data/sherman4.mat', 'Problem');
+    load('sherman4.mat', 'Problem');
     A = Problem.A;
     b = Problem.b;
 
