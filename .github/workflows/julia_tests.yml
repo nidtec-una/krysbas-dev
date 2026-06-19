@@ -37,6 +37,8 @@ jobs:
           project: julia
 
       - uses: julia-actions/julia-processcoverage@v1
+        with:
+          directories: julia/src
 
       - uses: codecov/codecov-action@v4
         with:
