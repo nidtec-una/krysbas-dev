@@ -222,7 +222,8 @@ for mi = 1:length(matrices)
     % Plot
     % ------------------------------------------------------------------
     figure('Name', ['Solver comparison -- ' mat_name], ...
-           'NumberTitle', 'off');
+           'NumberTitle', 'off', ...
+           'Units', 'pixels', 'Position', [50, 50, 1150, 520]);
     hold on;
 
     semilogy(cycles_gm, rrv_gm, ...
