@@ -275,7 +275,7 @@ function test_embree_3x3_toy_example()
 
     m = 2;
     k = 1;
-    tol = 1e-6;
+    tol = 1e-12;
     maxit = 100;
 
     [x, flag, ~, ~, time] = gmres_dr(A, b, m, k, tol, maxit);
