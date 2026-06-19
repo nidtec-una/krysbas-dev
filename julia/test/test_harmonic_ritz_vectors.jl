@@ -11,22 +11,23 @@
         @test size(dy, 1) == n
     end
 
-    @testset "selects smallest-magnitude eigenpairs" begin
+    @testset "selects largest-magnitude eigenpairs (LM → small eigs of A)" begin
         # F = diag(3, 1, 4, 1, 5), G = I → eigenvalues are 3,1,4,1,5.
-        # k=2 smallest in magnitude are the two eigenvalues == 1 (indices 2 and 4).
+        # k=2 largest in magnitude are eigenvalues 4 (index 3) and 5 (index 5).
+        # Large |λ| in F*y=λ*G*y approximates small eigenvalues of A (Morgan 1995).
         s, k = 5, 2
         F = diagm([3.0, 1.0, 4.0, 1.0, 5.0])
         G = Matrix(I, s, s)
         V = Matrix(I, s, s)   # identity → dy = eigenvectors of F directly
         dy = harmonic_ritz_vectors(F, G, k, V)
 
-        # Each column of dy should be close to a standard basis vector e₂ or e₄
+        # Each column of dy should be close to a standard basis vector e₃ or e₅
         norms = [norm(dy[:, j]) for j in 1:k]
         @test all(norms .> 0)
 
-        # The two returned vectors should span {e₂, e₄}
-        combined = abs.(dy' * [zeros(1); 1.0; zeros(1); 1.0; zeros(1)])
-        @test sum(combined) > 1.0   # at least some projection onto {e₂, e₄}
+        # The two returned vectors should span {e₃, e₅}
+        combined = abs.(dy' * [zeros(2); 1.0; zeros(1); 1.0])
+        @test sum(combined) > 1.0   # at least some projection onto {e₃, e₅}
     end
 
     @testset "real output for real problem" begin

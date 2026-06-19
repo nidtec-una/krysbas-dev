@@ -108,4 +108,18 @@
         @test t > 0
     end
 
+    @testset "Sherman5" begin
+        data_dir = joinpath(@__DIR__, "..", "..", "data")
+        file = matopen(joinpath(data_dir, "sherman5.mat"))
+        Problem = read(file, "Problem")
+        close(file)
+        A = Problem["A"]
+        b = vec(Problem["b"])
+
+        _, flag, relresvec, kdvec, t = gmres_e(A, b; m=27, d=3, tol=1e-12, maxit=1000)
+        @test flag
+        @test relresvec[end] < 1e-12
+        @test t > 0
+    end
+
 end

@@ -117,7 +117,7 @@ function gmres_e(A, b::AbstractVector;
         beta = norm(r)
         v1 = r / beta
 
-        H, V, s = augmented_gram_schmidt_arnoldi(A, v1, m, dy[:, 1:d])
+        H, V, s = augmented_gram_schmidt_arnoldi(A, v1, m, dy[:, d:-1:1])
         HUpTri, g = plane_rotations(H, beta)
 
         Rs = HUpTri[1:s, 1:s]

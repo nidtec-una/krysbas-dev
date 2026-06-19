@@ -29,6 +29,12 @@ function augmented_gram_schmidt_arnoldi(
         if h == 0
             return H[1:j+1, 1:j], V[:, 1:j], j
         end
+        # Near-breakdown: augmented direction is nearly in the Krylov space.
+        # Drop the last (nearly-dependent) direction rather than normalising
+        # w/h ≈ w/0 and producing a catastrophically ill-conditioned Rs.
+        if j > 1 && h < sqrt(eps(T)) * H[2, 1]
+            return H[1:j, 1:j-1], V[:, 1:j-1], j - 1
+        end
         if j < s
             view(V, :, j + 1) .= w ./ h
         end
