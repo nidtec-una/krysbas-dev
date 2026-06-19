@@ -1,3 +1,36 @@
+"""
+    gmres_e(A, b; m=0, d=-1, tol=1e-6, maxit=0, x_initial=[], eigstol=1e-6)
+
+Restarted GMRES augmented with harmonic Ritz vectors (GMRES-E(*m*, *d*)).
+
+At each restart, `d` approximate eigenvectors corresponding to the smallest
+eigenvalues of the search subspace are appended to the next Krylov subspace,
+accelerating convergence for matrices with a few small, problematic eigenvalues.
+
+# Arguments
+- `A`: square coefficient matrix (sparse or dense, `n×n`)
+- `b::AbstractVector`: right-hand side vector of length `n`
+- `m::Int=0`: Krylov restart dimension; defaults to `min(n, 10)`. Setting `m == n`
+  dispatches to full unrestarted GMRES.
+- `d::Int=-1`: number of harmonic Ritz vectors to append; defaults to `min(m, 3)`.
+  Setting `d == 0` dispatches to standard restarted GMRES(*m*).
+- `tol::Real=1e-6`: relative residual tolerance for convergence
+- `maxit::Int=0`: maximum number of restart cycles; defaults to `min(n, 10)`
+- `x_initial::AbstractVector=[]`: initial guess; defaults to the zero vector
+- `eigstol::Real=1e-6`: reserved for API compatibility (unused internally)
+
+# Returns
+- `x`: approximate solution vector
+- `flag::Bool`: `true` if `relresvec[end] < tol` within `maxit` restarts
+- `relresvec::Vector`: relative residual norm after each restart cycle
+- `kdvec::Vector`: Krylov subspace dimension used at each cycle
+- `time::Float64`: elapsed wall-clock time in seconds
+
+# References
+Morgan, R. B. (1995). A restarted GMRES method augmented with eigenvectors.
+*SIAM Journal on Matrix Analysis and Applications*, 16(4), 1154–1171.
+[doi:10.1137/S0895479893253975](https://doi.org/10.1137/S0895479893253975)
+"""
 function gmres_e(A, b::AbstractVector;
                  m::Int=0,
                  d::Int=-1,

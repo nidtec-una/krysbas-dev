@@ -7,3 +7,5 @@ matlab/coverage.xml
 
 # Julia
 julia/Manifest.toml
+julia/docs/Manifest.toml
+julia/docs/build/

@@ -1,3 +1,37 @@
+"""
+    lgmres(A, b; m=0, l=-1, tol=1e-6, maxit=0, x_initial=[])
+
+Restarted GMRES augmented with error approximation vectors (LGMRES(*m*, *l*)).
+
+At each restart, up to `l` error approximation vectors from prior cycles are
+appended to the Krylov subspace, preserving information that standard restarted
+GMRES discards. This typically yields faster convergence than GMRES(*m*+*l*)
+at the same per-cycle cost.
+
+# Arguments
+- `A`: square coefficient matrix (sparse or dense, `n×n`)
+- `b::AbstractVector`: right-hand side vector of length `n`
+- `m::Int=0`: base Krylov restart dimension; defaults to `min(n, 10)`. Setting
+  `m == n` dispatches to full unrestarted GMRES.
+- `l::Int=-1`: maximum number of stored error vectors to append; defaults to `3`.
+  Setting `l == 0` dispatches to standard restarted GMRES(*m*).
+- `tol::Real=1e-6`: relative residual tolerance for convergence
+- `maxit::Int=0`: maximum number of restart cycles; defaults to `min(n, 10)`
+- `x_initial::AbstractVector=[]`: initial guess; defaults to the zero vector
+
+# Returns
+- `x`: approximate solution vector
+- `flag::Bool`: `true` if `relresvec[end] < tol` within `maxit` restarts
+- `relresvec::Vector`: relative residual norm after each restart cycle
+- `kdvec::Vector`: Krylov subspace dimension used at each cycle
+- `time::Float64`: elapsed wall-clock time in seconds
+
+# References
+Baker, A. H., Jessup, E. R., & Manteuffel, T. (2005). A technique for
+accelerating the convergence of restarted GMRES. *SIAM Journal on Matrix
+Analysis and Applications*, 26(4), 962–984.
+[doi:10.1137/S0895479803422014](https://doi.org/10.1137/S0895479803422014)
+"""
 function lgmres(A, b::AbstractVector;
                 m::Int=0,
                 l::Int=-1,

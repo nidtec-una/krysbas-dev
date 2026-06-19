@@ -1,3 +1,41 @@
+"""
+    pd_gmres(A, b; m_initial=0, m_min_max=nothing, m_step=1,
+             tol=1e-6, maxit=0, x_initial=[], alpha_pd=[-3.0, 5.0])
+
+Restarted GMRES with a Proportional-Derivative controller (PD-GMRES(*m*)).
+
+The restart parameter *m* is adjusted automatically each cycle by a PD control
+law driven by the recent residual history, avoiding the need to hand-tune a
+fixed restart value.
+
+# Arguments
+- `A`: square coefficient matrix (sparse or dense, `n×n`)
+- `b::AbstractVector`: right-hand side vector of length `n`
+- `m_initial::Int=0`: initial restart dimension. `0` or `n` selects unrestarted
+  GMRES; any value in `1:n-1` enables the PD-adaptive restarted mode.
+- `m_min_max::Union{Vector{Int},Nothing}=nothing`: two-element vector
+  `[m_min, m_max]` bounding the adaptive restart range; ignored when unrestarted.
+  Defaults to `[1, n]`.
+- `m_step::Int=1`: increment/decrement step size for the PD rule
+- `tol::Real=1e-6`: relative residual tolerance for convergence
+- `maxit::Int=0`: maximum number of restart cycles; defaults to
+  `ceil(n / m_initial)` in restarted mode, or `min(n, 10)` unrestarted
+- `x_initial::AbstractVector=[]`: initial guess; defaults to the zero vector
+- `alpha_pd::Vector{Float64}=[-3.0, 5.0]`: PD gain vector `[αₚ, α_d]`
+
+# Returns
+- `x`: approximate solution vector
+- `flag::Bool`: `true` if `relresvec[end] < tol` within `maxit` restarts
+- `relresvec::Vector`: relative residual norm after each restart cycle
+- `kdvec::Vector`: restart dimension *m* used at each cycle
+- `time::Float64`: elapsed wall-clock time in seconds
+
+# References
+Núñez, R. C., Schaerer, C. E., & Bhaya, A. (2018). A proportional-derivative
+control strategy for restarting the GMRES(*m*) algorithm. *Journal of
+Computational and Applied Mathematics*, 337, 209–224.
+[doi:10.1016/j.cam.2018.01.009](https://doi.org/10.1016/j.cam.2018.01.009)
+"""
 function pd_gmres(A, b::AbstractVector;
                   m_initial::Int=0,
                   m_min_max::Union{Vector{Int},Nothing}=nothing,
