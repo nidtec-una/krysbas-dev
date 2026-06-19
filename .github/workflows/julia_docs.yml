@@ -1,0 +1,45 @@
+---
+name: Julia docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'julia/src/**'
+      - 'julia/docs/**'
+      - .github/workflows/julia_docs.yml
+  pull_request:
+    branches: ['*']
+    paths:
+      - 'julia/src/**'
+      - 'julia/docs/**'
+
+jobs:
+  docs:
+    name: Build and deploy Documenter.jl site
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+
+      - uses: julia-actions/cache@v2
+
+      - name: Install docs dependencies
+        run: |
+          julia --project=julia/docs -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=joinpath(pwd(), "julia")))
+            Pkg.instantiate()
+          '
+
+      - name: Build and deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: julia --project=julia/docs julia/docs/make.jl

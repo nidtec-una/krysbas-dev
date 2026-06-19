@@ -36,8 +36,8 @@ help:
 clean: clean-test clean-doc ## remove all build, test, coverage artifacts
 
 clean-test: ## remove test and coverage artifacts
-	rm -rf coverage_html
-	rm -f test_report.log
+	rm -rf matlab/coverage_html
+	rm -f matlab/test_report.log
 
 clean-doc: ## remove doc buils
 	rm -rf docs/build
@@ -56,8 +56,8 @@ manual: ## create pdf of the doc
 .PHONY: lint coverage
 
 lint: ## lint and checks matlab code
-	mh_style --fix && mh_metric --ci && mh_lint
+	cd matlab && mh_style --fix && mh_metric --ci && mh_lint
 
-coverage: run_tests.m ## runs tests and display coverage
-	$(MATLAB) $(MATLAB_ARG) -r "run_tests; exit()"
-	$(BROWSER) coverage_html/index.html
+coverage: matlab/run_tests.m ## runs tests and display coverage
+	cd matlab && $(MATLAB) $(MATLAB_ARG) -r "run_tests; exit()"
+	$(BROWSER) matlab/coverage_html/index.html

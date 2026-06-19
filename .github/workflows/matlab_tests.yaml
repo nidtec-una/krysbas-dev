@@ -56,7 +56,7 @@ jobs:
     - name: Check logs unix
       # if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       if: matrix.os == 'ubuntu-latest'  # only ubuntu for now
-      run: grep -q 0 test_report.log || { echo "Some tests failed. Check the 'Run tests' step to know which ones." >&2; exit 1; }
+      run: grep -q 0 matlab/test_report.log || { echo "Some tests failed. Check the 'Run tests' step to know which ones." >&2; exit 1; }
     # - name: Check logs windows
     #   if: matrix.os == 'windows-latest'
     #   run: |
@@ -70,7 +70,7 @@ jobs:
       # see https://github.com/MOcov/MOcov/issues/28
       uses: codecov/codecov-action@v4
       with:
-        file: coverage.xml   # optional
+        file: matlab/coverage.xml   # optional
         flags: ${{ matrix.os }}_matlab-${{ matrix.version }}
         name: codecov-umbrella   # optional
         fail_ci_if_error: false   # optional (default = false)

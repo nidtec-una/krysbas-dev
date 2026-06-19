@@ -1,0 +1,15 @@
+name = "KrySBAS"
+uuid = "c32dc074-837f-455a-a653-ba6a39c983d2"
+version = "0.1.0"
+authors = ["CC&MA - NIDTec - FP - UNA"]
+
+[deps]
+Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+
+[compat]
+Krylov = "0.10.6"
+MAT = "0.12.1"
+julia = "1.10"
