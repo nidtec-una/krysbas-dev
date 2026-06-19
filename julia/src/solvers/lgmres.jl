@@ -80,12 +80,13 @@ function lgmres(A, b::AbstractVector;
     T = eltype(b)
     t0 = time()
 
-    r0 = b - A * x_initial
-    res0 = norm(r0)
+    r_buf = b - A * x_initial   # residual buffer, reused each restart
+    res0 = norm(r_buf)
     relresvec = [1.0]
 
     # Sliding window of error approximation vectors (oldest → newest: col 1 → col l)
     z_mat = zeros(T, n, l)
+    z_current = zeros(T, n)   # reused each restart to avoid per-cycle allocation
 
     # Iteration 1: GMRES(m+l) cycle with online Givens rotations and convergence
     # detection within the cycle — mirrors MATLAB's gmres(A,b,m+l,tol,1,...,x0).
@@ -97,21 +98,23 @@ function lgmres(A, b::AbstractVector;
     gv1 = zeros(T, s_max + 1)
     gv1[1] = res0
     beta = res0
-    V1[:, 1] = r0 / beta
+    view(V1, :, 1) .= r_buf ./ beta
     s1 = s_max  # actual subspace dim for this cycle
 
     for j in 1:s_max
-        w = A * V1[:, j]
+        wj = view(V1, :, j + 1)   # use next V1 column as work buffer
+        mul!(wj, A, view(V1, :, j))
         for i in 1:j
-            H1[i, j] = dot(w, V1[:, i])
-            w -= H1[i, j] * V1[:, i]
+            vi = view(V1, :, i)
+            H1[i, j] = dot(wj, vi)
+            axpy!(-H1[i, j], vi, wj)
         end
-        h_norm = norm(w)
+        h_norm = norm(wj)
         H1[j + 1, j] = h_norm
         for i in 1:j - 1  # apply previous rotations to column j
-            tmp         =  c1[i] * H1[i, j] + sv1[i] * H1[i + 1, j]
-            H1[i + 1, j] = -sv1[i] * H1[i, j] + c1[i]  * H1[i + 1, j]
-            H1[i, j] = tmp
+            tmp           =  c1[i] * H1[i, j] + sv1[i] * H1[i + 1, j]
+            H1[i + 1, j]  = -sv1[i] * H1[i, j] + c1[i]  * H1[i + 1, j]
+            H1[i, j]      = tmp
         end
         denom = hypot(H1[j, j], H1[j + 1, j])
         if denom > 0
@@ -125,7 +128,7 @@ function lgmres(A, b::AbstractVector;
         gv1[j]     =   c1[j] * gv1[j]
         s1 = j
         if h_norm > 0 && j < s_max
-            V1[:, j + 1] = w / h_norm
+            wj ./= h_norm   # normalize in place; wj IS V1[:,j+1]
         end
         if abs(gv1[j + 1]) / res0 < tol || h_norm == 0
             break
@@ -134,63 +137,64 @@ function lgmres(A, b::AbstractVector;
 
     Rs1 = UpperTriangular(H1[1:s1, 1:s1])
     minimizer = Rs1 \ gv1[1:s1]
-    x = x_initial + V1[:, 1:s1] * minimizer
+    x_cur = copy(x_initial)
+    mul!(x_cur, view(V1, :, 1:s1), minimizer, 1.0, 1.0)   # x_cur = x_initial + V1*min
 
     push!(relresvec, abs(gv1[s1 + 1]) / res0)
-    z_mat[:, 1] = x - x_initial
+    mul!(view(z_mat, :, 1), view(V1, :, 1:s1), minimizer)  # z1 = x - x_initial
 
     if relresvec[end] < tol
         kdvec = fill(m + l, length(relresvec))
-        return x, true, relresvec, kdvec, time() - t0
+        return x_cur, true, relresvec, kdvec, time() - t0
     end
 
-    x_cur = x
     flag = false
 
     # Main loop: restart = 2, 3, ...
     for restart in 2:maxit
-        r = b - A * x_cur
-        beta = norm(r)
-        v1 = r / beta
+        copyto!(r_buf, b)
+        mul!(r_buf, A, x_cur, -1.0, 1.0)   # r_buf = b - A*x_cur
+        beta = norm(r_buf)
+        r_buf ./= beta                       # r_buf = v1 (normalized)
 
-        n_z = min(restart - 1, l)     # stored error vectors to use
-        m_eff = m + l - n_z            # effective Krylov dimension
+        n_z = min(restart - 1, l)           # stored error vectors to use
+        m_eff = m + l - n_z                  # effective Krylov dimension
 
-        z_slice = z_mat[:, 1:n_z]     # error vectors (oldest col 1 … newest col n_z)
-        H, V, s = augmented_gram_schmidt_arnoldi(A, v1, m_eff, z_slice)
+        z_slice = view(z_mat, :, 1:n_z)
+        H, V, s = augmented_gram_schmidt_arnoldi(A, r_buf, m_eff, z_slice)
         HUpTri, g = plane_rotations(H, beta)
 
         Rs = HUpTri[1:s, 1:s]
         minimizer = Rs \ g[1:s]
 
-        # W: Krylov columns from V, augmented columns from actual error vectors
-        # (newest error vector first, matching fliplr(zMat[:,1:n_z]) in MATLAB)
+        # z_current = V[:,1:m_eff_actual]*min[1:m_eff_actual]
+        #           + z_slice[:,reversed]*min[m_eff_actual+1:s]
+        # Avoids copy(V) by splitting the matvec across the two sub-matrices.
         m_eff_actual = min(m_eff, s)
-        W = copy(V)  # already n × s
         n_aug = s - m_eff_actual
-        if n_aug > 0
-            W[:, m_eff_actual + 1:s] = z_slice[:, n_z:-1:n_z - n_aug + 1]
+        mul!(z_current, view(V, :, 1:m_eff_actual), view(minimizer, 1:m_eff_actual))
+        for i in 1:n_aug
+            axpy!(minimizer[m_eff_actual + i],
+                  view(z_slice, :, n_z - i + 1), z_current)
         end
 
-        z_current = W * minimizer
-        xm = x_cur + z_current
-
+        x_cur .+= z_current
         push!(relresvec, abs(g[s + 1]) / res0)
 
         if relresvec[end] < tol
             flag = true
             kdvec = fill(m + l, length(relresvec))
-            return xm, flag, relresvec, kdvec, time() - t0
+            return x_cur, flag, relresvec, kdvec, time() - t0
         end
-
-        x_cur = xm
 
         # Update sliding window of error vectors
         if restart <= l
-            z_mat[:, restart] = z_current
+            copyto!(view(z_mat, :, restart), z_current)
         else
-            z_mat[:, 1:l - 1] = z_mat[:, 2:l]
-            z_mat[:, l] = z_current
+            for i in 1:l - 1
+                copyto!(view(z_mat, :, i), view(z_mat, :, i + 1))
+            end
+            copyto!(view(z_mat, :, l), z_current)
         end
     end
 

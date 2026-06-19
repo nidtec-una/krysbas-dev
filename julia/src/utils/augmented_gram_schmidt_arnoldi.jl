@@ -6,30 +6,33 @@ function augmented_gram_schmidt_arnoldi(
     T = eltype(v)
 
     H = zeros(T, s + 1, s)
-    W = zeros(T, n, s)
-    V = zeros(T, n, s + 1)
-    V[:, 1] = v
+    V = zeros(T, n, s)
+    w = zeros(T, n)       # single work vector (no n×s W matrix)
+
+    copyto!(view(V, :, 1), v)
 
     for j in 1:s
         if j <= m
-            W[:, j] = A * V[:, j]
+            mul!(w, A, view(V, :, j))
         else
-            # Augmented columns applied in reverse order (mirrors MATLAB fliplr logic)
-            W[:, j] = A * appendV[:, k - (j - m - 1)]
+            mul!(w, A, view(appendV, :, k - (j - m - 1)))
         end
 
         for i in 1:j
-            H[i, j] = dot(W[:, j], V[:, i])
-            W[:, j] -= H[i, j] * V[:, i]
+            vi = view(V, :, i)
+            H[i, j] = dot(w, vi)
+            axpy!(-H[i, j], vi, w)
         end
-        H[j + 1, j] = norm(W[:, j])
+        h = norm(w)
+        H[j + 1, j] = h
 
-        if H[j + 1, j] == 0
+        if h == 0
             return H[1:j+1, 1:j], V[:, 1:j], j
-        else
-            V[:, j + 1] = W[:, j] / H[j + 1, j]
+        end
+        if j < s
+            view(V, :, j + 1) .= w ./ h
         end
     end
 
-    return H, V[:, 1:s], s
+    return H, V, s   # V is exactly n×s — no copy needed
 end

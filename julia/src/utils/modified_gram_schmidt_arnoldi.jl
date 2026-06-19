@@ -2,24 +2,28 @@ function modified_gram_schmidt_arnoldi(A, v::AbstractVector, m::Int)
     n = size(A, 1)
     T = eltype(v)
     H = zeros(T, m + 1, m)
-    W = zeros(T, n, m)
-    V = zeros(T, n, m + 1)
-    V[:, 1] = v
+    V = zeros(T, n, m)
+    w = zeros(T, n)       # single work vector (no n×m W matrix)
+
+    copyto!(view(V, :, 1), v)
 
     for j in 1:m
-        W[:, j] = A * V[:, j]
+        mul!(w, A, view(V, :, j))
         for i in 1:j
-            H[i, j] = dot(W[:, j], V[:, i])
-            W[:, j] -= H[i, j] * V[:, i]
+            vi = view(V, :, i)
+            H[i, j] = dot(w, vi)
+            axpy!(-H[i, j], vi, w)
         end
-        H[j + 1, j] = norm(W[:, j])
+        h = norm(w)
+        H[j + 1, j] = h
 
-        if H[j + 1, j] == 0
+        if h == 0
             return H[1:j+1, 1:j], V[:, 1:j], j
-        else
-            V[:, j + 1] = W[:, j] / H[j + 1, j]
+        end
+        if j < m
+            view(V, :, j + 1) .= w ./ h
         end
     end
 
-    return H, V[:, 1:m], m
+    return H, V, m   # V is exactly n×m — no copy needed
 end

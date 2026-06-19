@@ -95,8 +95,8 @@ function pd_gmres(A, b::AbstractVector;
     m_cur = m_initial
     x_cur = copy(x_initial)
 
-    r0 = b - A * x_cur
-    res0 = norm(r0)
+    r_buf = b - A * x_cur   # residual buffer, reused each restart
+    res0 = norm(r_buf)
     res_abs = [res0]  # absolute residuals for pd_rule
     relresvec = [1.0]
     kdvec = [m_initial]
@@ -109,26 +109,26 @@ function pd_gmres(A, b::AbstractVector;
         end
         push!(kdvec, m_cur)
 
-        r = b - A * x_cur
-        beta = norm(r)
-        v1 = r / beta
+        copyto!(r_buf, b)
+        mul!(r_buf, A, x_cur, -1.0, 1.0)   # r_buf = b - A*x_cur
+        beta = norm(r_buf)
+        r_buf ./= beta                       # r_buf = v1 (normalized)
 
-        H, V, m_used = modified_gram_schmidt_arnoldi(A, v1, m_cur)
+        H, V, m_used = modified_gram_schmidt_arnoldi(A, r_buf, m_cur)
         HUpTri, g = plane_rotations(H, beta)
 
         Rs = HUpTri[1:m_used, 1:m_used]
         minimizer = Rs \ g[1:m_used]
-        xm = x_cur + V * minimizer
+        mul!(x_cur, V, minimizer, 1.0, 1.0)   # x_cur += V * minimizer
 
         push!(res_abs, abs(g[m_used + 1]))
         push!(relresvec, res_abs[end] / res0)
 
         if relresvec[end] < tol || length(relresvec) >= maxit
             flag = relresvec[end] < tol
-            return xm, flag, relresvec, kdvec, time() - t0
+            return x_cur, flag, relresvec, kdvec, time() - t0
         end
 
-        x_cur = xm
         m_cur = m_used  # may be less than requested if happy breakdown occurred
     end
 
