@@ -17,7 +17,7 @@ const DATA_DIR  = joinpath(@__DIR__, "..", "data")
 
 # Solver dispatch table with fixed parameters (gmres_e excluded: SM vs LM Ritz mismatch)
 const SOLVERS = [
-    ("lgmres",   (A, b) -> lgmres(  A, b; m=27, l=3,              tol=TOL, maxit=MAXIT)),
+    ("lgmres",   (A, b) -> lgmres(  A, b; m=100, l=3,             tol=TOL, maxit=MAXIT)),
     ("pd_gmres", (A, b) -> pd_gmres(A, b; m_initial=30, m_step=3, tol=TOL, maxit=MAXIT)),
 ]
 
@@ -115,7 +115,7 @@ end
 println()
 println(hdr(70))
 println("  KrySBAS Performance Comparison  ·  Julia vs Octave")
-println("  Parameters: lgmres m=27 l=3  |  pd_gmres m_initial=30 m_step=3  |  tol=1e-9")
+println("  Parameters: lgmres m=100 l=3  |  pd_gmres m_initial=30 m_step=3  |  tol=1e-9")
 println("  Julia timing: warmup + $(N_RUNS) runs, minimum reported")
 println("  Octave timing: $(N_RUNS) runs, minimum reported")
 println(hdr(70))

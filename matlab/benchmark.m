@@ -11,7 +11,7 @@ addpath(genpath(fullfile(script_dir, 'src')));
 data_dir = fullfile(script_dir, '..', 'data');
 
 matrices  = {'sherman1', 'sherman4', 'sherman5'};
-m_krylov  = 27;
+m_krylov  = 100;
 l_aug     = 3;
 m_init    = 30;
 m_stp     = 3;
