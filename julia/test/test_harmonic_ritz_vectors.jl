@@ -22,7 +22,7 @@
         dy = harmonic_ritz_vectors(F, G, k, V)
 
         # Each column of dy should be close to a standard basis vector e₃ or e₅
-        norms = [norm(dy[:, j]) for j in 1:k]
+        norms = [norm(dy[:, j]) for j = 1:k]
         @test all(norms .> 0)
 
         # The two returned vectors should span {e₃, e₅}

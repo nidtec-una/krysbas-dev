@@ -5,8 +5,12 @@ using KrySBAS
 
 # Internal utilities — not part of the public API but tested directly.
 # Add each name here as the corresponding step is ported.
-import KrySBAS: plane_rotations, modified_gram_schmidt_arnoldi,
-    augmented_gram_schmidt_arnoldi, harmonic_ritz_vectors, pd_rule
+import KrySBAS:
+    plane_rotations,
+    modified_gram_schmidt_arnoldi,
+    augmented_gram_schmidt_arnoldi,
+    harmonic_ritz_vectors,
+    pd_rule
 
 # Tests are added step by step following migration_plan.md.
 # Uncomment each include as the corresponding component is ported:

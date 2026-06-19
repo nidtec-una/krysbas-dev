@@ -36,14 +36,17 @@ control strategy for restarting the GMRES(*m*) algorithm. *Journal of
 Computational and Applied Mathematics*, 337, 209–224.
 [doi:10.1016/j.cam.2018.01.009](https://doi.org/10.1016/j.cam.2018.01.009)
 """
-function pd_gmres(A, b::AbstractVector;
-                  m_initial::Int=0,
-                  m_min_max::Union{Vector{Int},Nothing}=nothing,
-                  m_step::Int=1,
-                  tol::Real=1e-6,
-                  maxit::Int=0,
-                  x_initial::AbstractVector=Float64[],
-                  alpha_pd::Vector{Float64}=[-3.0, 5.0])
+function pd_gmres(
+    A,
+    b::AbstractVector;
+    m_initial::Int = 0,
+    m_min_max::Union{Vector{Int},Nothing} = nothing,
+    m_step::Int = 1,
+    tol::Real = 1e-6,
+    maxit::Int = 0,
+    x_initial::AbstractVector = Float64[],
+    alpha_pd::Vector{Float64} = [-3.0, 5.0],
+)
 
     # Sanity checks
     if ndims(A) != 2 || size(A, 1) == 0
@@ -65,7 +68,11 @@ function pd_gmres(A, b::AbstractVector;
         x_initial = zeros(eltype(b), n)
     end
     if length(x_initial) != n
-        throw(ArgumentError("Dimension mismatch between matrix A and initial guess x_initial."))
+        throw(
+            ArgumentError(
+                "Dimension mismatch between matrix A and initial guess x_initial.",
+            ),
+        )
     end
 
     # m_initial == 0 means "not given" → unrestarted; also m_initial == n is unrestarted
@@ -83,10 +90,18 @@ function pd_gmres(A, b::AbstractVector;
         else
             m_min, m_max = m_min_max[1], m_min_max[2]
             if m_min < 1 || m_max > n || m_max <= m_min
-                throw(ArgumentError("m_min_max must satisfy: 1 <= m_min_max[1] < m_min_max[2] <= n."))
+                throw(
+                    ArgumentError(
+                        "m_min_max must satisfy: 1 <= m_min_max[1] < m_min_max[2] <= n.",
+                    ),
+                )
             end
             if m_min > m_initial || m_max < m_initial
-                throw(ArgumentError("m_min_max must satisfy: m_min_max[1] <= m_initial <= m_min_max[2]."))
+                throw(
+                    ArgumentError(
+                        "m_min_max must satisfy: m_min_max[1] <= m_initial <= m_min_max[2].",
+                    ),
+                )
             end
         end
     end
@@ -114,7 +129,7 @@ function pd_gmres(A, b::AbstractVector;
         t0 = time()
         r0_unr = b - A * x_initial
         res0 = norm(r0_unr)
-        x_shift, stats = Krylov.gmres(A, r0_unr; memory=n, itmax=n)
+        x_shift, stats = Krylov.gmres(A, r0_unr; memory = n, itmax = n)
         x = x_initial + x_shift
         elapsed = time() - t0
         resf = norm(b - A * x)
@@ -139,11 +154,21 @@ function pd_gmres(A, b::AbstractVector;
     relresvec = [1.0]
     kdvec = [m_initial]
 
-    for restart in 1:typemax(Int)
+    for restart = 1:typemax(Int)
         # Update m via PD rule (not on first iteration)
         if restart > 1
-            m_cur, m_initial = pd_rule(m_cur, n, m_initial, m_min, m_max, m_step,
-                                       res_abs, restart, alpha_p, alpha_d)
+            m_cur, m_initial = pd_rule(
+                m_cur,
+                n,
+                m_initial,
+                m_min,
+                m_max,
+                m_step,
+                res_abs,
+                restart,
+                alpha_p,
+                alpha_d,
+            )
         end
         push!(kdvec, m_cur)
 
@@ -159,7 +184,7 @@ function pd_gmres(A, b::AbstractVector;
         minimizer = Rs \ g[1:m_used]
         mul!(x_cur, V, minimizer, 1.0, 1.0)   # x_cur += V * minimizer
 
-        push!(res_abs, abs(g[m_used + 1]))
+        push!(res_abs, abs(g[m_used+1]))
         push!(relresvec, res_abs[end] / res0)
 
         if relresvec[end] < tol || length(relresvec) >= maxit

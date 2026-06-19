@@ -32,12 +32,15 @@ accelerating the convergence of restarted GMRES. *SIAM Journal on Matrix
 Analysis and Applications*, 26(4), 962–984.
 [doi:10.1137/S0895479803422014](https://doi.org/10.1137/S0895479803422014)
 """
-function lgmres(A, b::AbstractVector;
-                m::Int=0,
-                l::Int=-1,
-                tol::Real=1e-6,
-                maxit::Int=0,
-                x_initial::AbstractVector=Float64[])
+function lgmres(
+    A,
+    b::AbstractVector;
+    m::Int = 0,
+    l::Int = -1,
+    tol::Real = 1e-6,
+    maxit::Int = 0,
+    x_initial::AbstractVector = Float64[],
+)
 
     # Sanity checks
     if ndims(A) != 2 || size(A, 1) == 0
@@ -66,13 +69,17 @@ function lgmres(A, b::AbstractVector;
         x_initial = zeros(eltype(b), n)
     end
     if length(x_initial) != n
-        throw(ArgumentError("Dimension mismatch between matrix A and initial guess x_initial."))
+        throw(
+            ArgumentError(
+                "Dimension mismatch between matrix A and initial guess x_initial.",
+            ),
+        )
     end
 
     # Dispatch: m == n → full unrestarted GMRES
     if m == n
         t0 = time()
-        x, stats = Krylov.gmres(A, b; memory=n)
+        x, stats = Krylov.gmres(A, b; memory = n)
         elapsed = time() - t0
         r0 = b - A * x_initial
         res0 = norm(r0)
@@ -85,7 +92,7 @@ function lgmres(A, b::AbstractVector;
     # Dispatch: l == 0 explicitly → restarted GMRES(m)
     if l == 0
         t0 = time()
-        x, stats = Krylov.gmres(A, b; memory=m)
+        x, stats = Krylov.gmres(A, b; memory = m)
         elapsed = time() - t0
         r0 = b - A * x_initial
         res0 = norm(r0)
@@ -135,36 +142,38 @@ function lgmres(A, b::AbstractVector;
     view(V1, :, 1) .= r_buf ./ beta
     s1 = s_max  # actual subspace dim for this cycle
 
-    for j in 1:s_max
+    for j = 1:s_max
         wj = view(V1, :, j + 1)   # use next V1 column as work buffer
         mul!(wj, A, view(V1, :, j))
-        for i in 1:j
+        for i = 1:j
             vi = view(V1, :, i)
             H1[i, j] = dot(wj, vi)
             axpy!(-H1[i, j], vi, wj)
         end
         h_norm = norm(wj)
-        H1[j + 1, j] = h_norm
-        for i in 1:j - 1  # apply previous rotations to column j
-            tmp           =  c1[i] * H1[i, j] + sv1[i] * H1[i + 1, j]
-            H1[i + 1, j]  = -sv1[i] * H1[i, j] + c1[i]  * H1[i + 1, j]
-            H1[i, j]      = tmp
+        H1[j+1, j] = h_norm
+        for i = 1:(j-1)  # apply previous rotations to column j
+            tmp = c1[i] * H1[i, j] + sv1[i] * H1[i+1, j]
+            H1[i+1, j] = -sv1[i] * H1[i, j] + c1[i] * H1[i+1, j]
+            H1[i, j] = tmp
         end
-        denom = hypot(H1[j, j], H1[j + 1, j])
+        denom = hypot(H1[j, j], H1[j+1, j])
         if denom > 0
-            c1[j]  = H1[j, j]     / denom
-            sv1[j] = H1[j + 1, j] / denom
+            c1[j] = H1[j, j] / denom
+            sv1[j] = H1[j+1, j] / denom
         else
-            c1[j] = one(T); sv1[j] = zero(T)
+            c1[j] = one(T);
+            sv1[j] = zero(T)
         end
-        H1[j, j] = denom; H1[j + 1, j] = zero(T)
-        gv1[j + 1] = -sv1[j] * gv1[j]
-        gv1[j]     =   c1[j] * gv1[j]
+        H1[j, j] = denom;
+        H1[j+1, j] = zero(T)
+        gv1[j+1] = -sv1[j] * gv1[j]
+        gv1[j] = c1[j] * gv1[j]
         s1 = j
         if h_norm > 0 && j < s_max
             wj ./= h_norm   # normalize in place; wj IS V1[:,j+1]
         end
-        if abs(gv1[j + 1]) / res0 < tol || h_norm == 0
+        if abs(gv1[j+1]) / res0 < tol || h_norm == 0
             break
         end
     end
@@ -174,7 +183,7 @@ function lgmres(A, b::AbstractVector;
     x_cur = copy(x_initial)
     mul!(x_cur, view(V1, :, 1:s1), minimizer, 1.0, 1.0)   # x_cur = x_initial + V1*min
 
-    push!(relresvec, abs(gv1[s1 + 1]) / res0)
+    push!(relresvec, abs(gv1[s1+1]) / res0)
     mul!(view(z_mat, :, 1), view(V1, :, 1:s1), minimizer)  # z1 = x - x_initial
 
     if relresvec[end] < tol
@@ -185,7 +194,7 @@ function lgmres(A, b::AbstractVector;
     flag = false
 
     # Main loop: restart = 2, 3, ...
-    for restart in 2:maxit
+    for restart = 2:maxit
         copyto!(r_buf, b)
         mul!(r_buf, A, x_cur, -1.0, 1.0)   # r_buf = b - A*x_cur
         beta = norm(r_buf)
@@ -207,13 +216,12 @@ function lgmres(A, b::AbstractVector;
         m_eff_actual = min(m_eff, s)
         n_aug = s - m_eff_actual
         mul!(z_current, view(V, :, 1:m_eff_actual), view(minimizer, 1:m_eff_actual))
-        for i in 1:n_aug
-            axpy!(minimizer[m_eff_actual + i],
-                  view(z_slice, :, n_z - i + 1), z_current)
+        for i = 1:n_aug
+            axpy!(minimizer[m_eff_actual+i], view(z_slice, :, n_z - i + 1), z_current)
         end
 
         x_cur .+= z_current
-        push!(relresvec, abs(g[s + 1]) / res0)
+        push!(relresvec, abs(g[s+1]) / res0)
 
         if relresvec[end] < tol
             flag = true
@@ -225,7 +233,7 @@ function lgmres(A, b::AbstractVector;
         if restart <= l
             copyto!(view(z_mat, :, restart), z_current)
         else
-            for i in 1:l - 1
+            for i = 1:(l-1)
                 copyto!(view(z_mat, :, i), view(z_mat, :, i + 1))
             end
             copyto!(view(z_mat, :, l), z_current)

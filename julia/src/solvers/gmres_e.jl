@@ -31,13 +31,16 @@ Morgan, R. B. (1995). A restarted GMRES method augmented with eigenvectors.
 *SIAM Journal on Matrix Analysis and Applications*, 16(4), 1154–1171.
 [doi:10.1137/S0895479893253975](https://doi.org/10.1137/S0895479893253975)
 """
-function gmres_e(A, b::AbstractVector;
-                 m::Int=0,
-                 d::Int=-1,
-                 tol::Real=1e-6,
-                 maxit::Int=0,
-                 x_initial::AbstractVector=Float64[],
-                 eigstol::Real=1e-6)
+function gmres_e(
+    A,
+    b::AbstractVector;
+    m::Int = 0,
+    d::Int = -1,
+    tol::Real = 1e-6,
+    maxit::Int = 0,
+    x_initial::AbstractVector = Float64[],
+    eigstol::Real = 1e-6,
+)
 
     # Sanity checks
     if ndims(A) != 2 || size(A, 1) == 0
@@ -66,13 +69,17 @@ function gmres_e(A, b::AbstractVector;
         x_initial = zeros(eltype(b), n)
     end
     if length(x_initial) != n
-        throw(ArgumentError("Dimension mismatch between matrix A and initial guess x_initial."))
+        throw(
+            ArgumentError(
+                "Dimension mismatch between matrix A and initial guess x_initial.",
+            ),
+        )
     end
 
     # Dispatch: m == n → full unrestarted GMRES
     if m == n
         t0 = time()
-        x, stats = Krylov.gmres(A, b; memory=n)
+        x, stats = Krylov.gmres(A, b; memory = n)
         elapsed = time() - t0
         r0 = b - A * x_initial
         res0 = norm(r0)
@@ -85,7 +92,7 @@ function gmres_e(A, b::AbstractVector;
     # Dispatch: d == 0 explicitly → restarted GMRES(m)
     if d == 0
         t0 = time()
-        x, stats = Krylov.gmres(A, b; memory=m)
+        x, stats = Krylov.gmres(A, b; memory = m)
         elapsed = time() - t0
         r0 = b - A * x_initial
         res0 = norm(r0)
@@ -131,7 +138,7 @@ function gmres_e(A, b::AbstractVector;
     minimizer = Rs \ g[1:s]
     xm = x_initial + V * minimizer
 
-    push!(relresvec, abs(g[s + 1]) / res0)
+    push!(relresvec, abs(g[s+1]) / res0)
 
     if relresvec[end] < tol
         flag = true
@@ -145,7 +152,7 @@ function gmres_e(A, b::AbstractVector;
 
     # Main GMRES-E loop (outer iterations 2, 3, ...)
     x = xm
-    for restart in 2:maxit
+    for restart = 2:maxit
         r = b - A * xm
         beta = norm(r)
         v1 = r / beta
@@ -160,11 +167,11 @@ function gmres_e(A, b::AbstractVector;
         n_aug = max(0, s - m)
         V_use = copy(V)
         if n_aug > 0
-            V_use[:, m + 1:s] = dy[:, 1:n_aug]
+            V_use[:, (m+1):s] = dy[:, 1:n_aug]
         end
 
         x = xm + V_use * minimizer
-        push!(relresvec, abs(g[s + 1]) / res0)
+        push!(relresvec, abs(g[s+1]) / res0)
 
         if relresvec[end] < tol
             flag = true

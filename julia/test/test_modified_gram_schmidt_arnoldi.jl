@@ -45,12 +45,12 @@
         v = ones(n) / sqrt(n)
         H, V, _ = modified_gram_schmidt_arnoldi(A, v, m)
 
-        for j in 1:m
+        for j = 1:m
             r = A * V[:, j]
-            for i in 1:j
+            for i = 1:j
                 r -= H[i, j] * V[:, i]
             end
-            @test norm(r) ≈ H[j + 1, j] atol = 1e-10
+            @test norm(r) ≈ H[j+1, j] atol = 1e-10
         end
     end
 

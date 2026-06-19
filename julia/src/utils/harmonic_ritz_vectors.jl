@@ -1,5 +1,9 @@
-function harmonic_ritz_vectors(F::AbstractMatrix, G::AbstractMatrix, k::Int,
-        V::AbstractMatrix)
+function harmonic_ritz_vectors(
+    F::AbstractMatrix,
+    G::AbstractMatrix,
+    k::Int,
+    V::AbstractMatrix,
+)
     # Solve the small dense generalised eigenvalue problem F*y = λ*G*y.
     # F and G are s×s (s = m+d, typically < 50), so eigen() is cheaper and
     # simpler than calling an iterative eigensolver like Arpack.
@@ -9,7 +13,7 @@ function harmonic_ritz_vectors(F::AbstractMatrix, G::AbstractMatrix, k::Int,
     # Large |λ| in F*y = λ*G*y corresponds to small eigenvalues of A (the
     # harmonic Ritz values approximate eigenvalues from above), so we want LM.
     order = sortperm(abs.(vals))
-    E = vecs[:, order[end-k+1:end]]
+    E = vecs[:, order[(end-k+1):end]]
 
     # Lift the small eigenvectors back to the full space: yᵢ = V * eᵢ
     dy0 = V * E

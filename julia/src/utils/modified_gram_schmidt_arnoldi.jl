@@ -7,18 +7,18 @@ function modified_gram_schmidt_arnoldi(A, v::AbstractVector, m::Int)
 
     copyto!(view(V, :, 1), v)
 
-    for j in 1:m
+    for j = 1:m
         mul!(w, A, view(V, :, j))
-        for i in 1:j
+        for i = 1:j
             vi = view(V, :, i)
             H[i, j] = dot(w, vi)
             axpy!(-H[i, j], vi, w)
         end
         h = norm(w)
-        H[j + 1, j] = h
+        H[j+1, j] = h
 
         if h == 0
-            return H[1:j+1, 1:j], V[:, 1:j], j
+            return H[1:(j+1), 1:j], V[:, 1:j], j
         end
         if j < m
             view(V, :, j + 1) .= w ./ h

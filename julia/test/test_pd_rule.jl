@@ -25,8 +25,7 @@
         res = [1.0, 0.5, 0.4, 0.2]
         m = 10
         mj, _ = pd_rule(m, n, m_init, m_min, m_max, m_step, res, 4, αP, αD)
-        pd_term = αP * (res[4] / res[3]) +
-                  αD * ((res[4] - res[2]) / (2 * res[3]))
+        pd_term = αP * (res[4] / res[3]) + αD * ((res[4] - res[2]) / (2 * res[3]))
         expected = clamp(m + ceil(Int, pd_term), m_min, m_max)
         @test mj == expected
     end
