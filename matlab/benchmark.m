@@ -1,8 +1,28 @@
-% KrySBAS Octave benchmark — run by julia/benchmark.jl via subprocess.
+% KrySBAS Octave benchmark - run by julia/benchmark.jl via subprocess.
 % Each result line: RESULT,solver,matrix,n,nnz,time_s,iters,relres
 %
 % Usage (standalone):
 %   octave --norc --no-gui matlab/benchmark.m
+%
+%   Copyright:
+%   ----------
+%
+%   This file is part of the KrySBAS MATLAB Toolbox.
+%
+%   Copyright 2026 CC&MA - NIDTec - FP - UNA
+%
+%   KrySBAS is free software: you can redistribute it and/or modify it
+%   under the terms of the GNU General Public License as published by the
+%   Free Software Foundation, either version 3 of the License, or (at
+%   your option) any later version.
+%
+%   KrySBAS is distributed in the hope that it will be useful, but WITHOUT
+%   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+%   for more details.
+%
+%   You should have received a copy of the GNU General Public License along
+%   with this file.  If not, see <http://www.gnu.org/licenses/>.
 
 warning('off', 'all');   % suppress near-singular triangular-solve warnings
 
@@ -38,7 +58,7 @@ for mi = 1:length(matrices)
         times(k) = t;
     end
     fprintf('RESULT,lgmres,%s,%d,%d,%.6f,%d,%.3e\n', ...
-        mat_name, n_size, nnz_A, min(times), numel(rrv) - 1, rrv(end));
+            mat_name, n_size, nnz_A, min(times), numel(rrv) - 1, rrv(end));
 
     % --- pd_gmres ---
     times = zeros(n_runs, 1);
@@ -47,5 +67,5 @@ for mi = 1:length(matrices)
         times(k) = t;
     end
     fprintf('RESULT,pd_gmres,%s,%d,%d,%.6f,%d,%.3e\n', ...
-        mat_name, n_size, nnz_A, min(times), numel(rrv) - 1, rrv(end));
+            mat_name, n_size, nnz_A, min(times), numel(rrv) - 1, rrv(end));
 end
