@@ -154,7 +154,7 @@ for mi = 1:length(matrices)
     [~, flag_gm, ~, ~, resvec_gm] = gmres(A, b, m, tol, maxit);
     t_gm = toc(tic_gm);
     idx_gm = unique([1:m:numel(resvec_gm), numel(resvec_gm)]);
-    rrv_gm = resvec_gm(idx_gm);
+    rrv_gm = resvec_gm(idx_gm) / resvec_gm(1);
     fprintf('  GMRES(m)  : flag=%d  cycles=%3d  time=%.3fs\n', ...
             flag_gm, numel(rrv_gm) - 1, t_gm);
 
@@ -269,13 +269,13 @@ for mi = 1:length(matrices)
 
     hold off;
 
-    xlabel('Restart cycle', 'FontSize', 12, 'Interpreter', 'latex');
-    ylabel('$\|r\| / \|r_0\|$', 'FontSize', 12, 'Interpreter', 'latex');
+    xlabel('Restart cycle', 'FontSize', 13, 'Interpreter', 'latex');
+    ylabel('$\|r\| / \|r_0\|$', 'FontSize', 13, 'Interpreter', 'latex');
     title(['Solver comparison -- ' mat_name ...
            ' $(n = ' num2str(n) ')$'], ...
-          'FontSize', 13, 'Interpreter', 'latex');
+          'FontSize', 14, 'Interpreter', 'latex');
     legend('Location', 'southoutside', 'NumColumns', 2, ...
-           'FontSize', 10, 'Interpreter', 'latex');
+           'FontSize', 13, 'Interpreter', 'latex');
     grid on;
     set(gca, 'YScale', 'log');
 
