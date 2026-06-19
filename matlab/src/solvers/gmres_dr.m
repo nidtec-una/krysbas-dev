@@ -431,7 +431,9 @@ function [x, flag, relresvec, kdvec, time] = ...
 
     % Sort by ascending |eigenvalue| to get the k smallest
     [~, idx] = sort(abs(diag(Dk)));
-    Ek = Ek_raw(:, idx);  % s-by-k, Arnoldi-space eigenvectors
+    % Take real part: for a real problem the imaginary components of the
+    % harmonic Ritz vectors are numerical noise introduced by eigs.
+    Ek = real(Ek_raw(:, idx));  % s-by-k, Arnoldi-space eigenvectors
 
     % n-space Ritz vectors (before orthonormalization)
     Yk = V * Ek;  % n-by-k
@@ -663,7 +665,8 @@ function [x, flag, relresvec, kdvec, time] = ...
         opts_eig.v0 = ones(s_new, 1);
         [Ek_raw_new, Dk_new] = eigs(Fsq_new, G_new, k, 'LM', opts_eig);
         [~, idx_new] = sort(abs(diag(Dk_new)));
-        Ek = Ek_raw_new(:, idx_new);  % s_new-by-k
+        % Take real part: imaginary components are numerical noise from eigs.
+        Ek = real(Ek_raw_new(:, idx_new));  % s_new-by-k
 
         % n-space Ritz vectors for next cycle
         Yk = V_cycle(:, 1:s_new) * Ek;  % n-by-k
