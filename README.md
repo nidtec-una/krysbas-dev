@@ -7,7 +7,7 @@
 # KrySBAS: Krylov Subspace-Based Adaptive Solvers
 
 <p align="center">
-  <img src="kyrsbas_logo.png" alt="KrySBAS logo" width="250"/>
+  <img src="krysbas_logo.png" alt="KrySBAS logo" width="250"/>
 </p>
 
 
