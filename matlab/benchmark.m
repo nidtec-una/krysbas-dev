@@ -10,9 +10,8 @@ script_dir = fileparts(mfilename('fullpath'));
 addpath(genpath(fullfile(script_dir, 'src')));
 data_dir = fullfile(script_dir, '..', 'data');
 
-matrices  = {'sherman1', 'sherman4'};   % skip sherman5: too slow in Octave
+matrices  = {'sherman1', 'sherman4', 'sherman5'};
 m_krylov  = 27;
-d_aug     = 3;
 l_aug     = 3;
 m_init    = 30;
 m_stp     = 3;
@@ -31,15 +30,6 @@ for mi = 1:length(matrices)
     b = Problem.b;
     n_size = size(A, 1);
     nnz_A  = nnz(A);
-
-    % --- gmres_e ---
-    times = zeros(n_runs, 1);
-    for k = 1:n_runs
-        [~, ~, rrv, ~, t] = gmres_e(A, b, m_krylov, d_aug, tol, maxit);
-        times(k) = t;
-    end
-    fprintf('RESULT,gmres_e,%s,%d,%d,%.6f,%d,%.3e\n', ...
-        mat_name, n_size, nnz_A, min(times), numel(rrv) - 1, rrv(end));
 
     % --- lgmres ---
     times = zeros(n_runs, 1);
