@@ -1,5 +1,5 @@
 ---
-name: code_style
+name: miss_hit
 
 # Credits: This workflow has been modified from:
 # https://github.com/Remi-Gau/template_matlab_analysis/blob/main/.github/workflows/miss_hit.yml
