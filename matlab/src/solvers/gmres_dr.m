@@ -324,6 +324,14 @@ function [x, flag, relresvec, kdvec, time] = ...
 
     nCycles = 0;  % number of completed cycles
 
+    % Threshold for choosing between the dense and sparse eigensolvers.
+    % For s <= eig_dense_thresh we call eig() (LAPACK, all eigenvalues):
+    %   robust against singular G, negligible cost for small subspaces.
+    % For s >  eig_dense_thresh we call eigs() (ARPACK, k eigenvalues)
+    %   to avoid factoring a large dense matrix; if eigs fails due to an
+    %   ill-conditioned G we fall back to eig() automatically.
+    eig_dense_thresh = 200;
+
     tic();  % start wall-clock timer
 
     % =========================================================================
@@ -423,17 +431,22 @@ function [x, flag, relresvec, kdvec, time] = ...
     %
     % Generalized eigenvalue problem (harmonic Ritz, [1] p. 1161, step 5):
     %   Fsq * u = lambda * G * u
-    % Take the k eigenpairs with smallest |lambda|; columns of Ek are the
-    % eigenvectors in Arnoldi space; n-space Ritz vectors are Vk = V * Ek.
-    opts_eig.tol = tol;
-    opts_eig.v0 = ones(s, 1);
-    [Ek_raw, Dk] = eigs(Fsq, G, k, 'LM', opts_eig);
-
-    % Sort by ascending |eigenvalue| to get the k smallest
-    [~, idx] = sort(abs(diag(Dk)));
-    % Take real part: for a real problem the imaginary components of the
-    % harmonic Ritz vectors are numerical noise introduced by eigs.
-    Ek = real(Ek_raw(:, idx));  % s-by-k, Arnoldi-space eigenvectors
+    % Select eigensolver based on subspace size (see eig_dense_thresh).
+    if s <= eig_dense_thresh
+        [Ek_all, Dk_all] = eig(Fsq, G);
+        Ek = gmres_dr_pick_ritz(Ek_all, Dk_all, Fsq, k);
+    else
+        try
+            opts_eig.tol = tol;
+            opts_eig.v0 = ones(s, 1);
+            [Ek_raw, Dk] = eigs(Fsq, G, k, 'LM', opts_eig);
+            [~, ord] = sort(abs(diag(Dk)));
+            Ek = real(Ek_raw(:, ord));
+        catch
+            [Ek_all, Dk_all] = eig(Fsq, G);
+            Ek = gmres_dr_pick_ritz(Ek_all, Dk_all, Fsq, k);
+        end
+    end
 
     % n-space Ritz vectors (before orthonormalization)
     Yk = V * Ek;  % n-by-k
@@ -662,11 +675,22 @@ function [x, flag, relresvec, kdvec, time] = ...
         Fsq_new = H_def(1:s_new, 1:s_new)';
         G_new = Rs_new' * Rs_new;
 
-        opts_eig.v0 = ones(s_new, 1);
-        [Ek_raw_new, Dk_new] = eigs(Fsq_new, G_new, k, 'LM', opts_eig);
-        [~, idx_new] = sort(abs(diag(Dk_new)));
-        % Take real part: imaginary components are numerical noise from eigs.
-        Ek = real(Ek_raw_new(:, idx_new));  % s_new-by-k
+        if s_new <= eig_dense_thresh
+            [Ek_all, Dk_all] = eig(Fsq_new, G_new);
+            Ek = gmres_dr_pick_ritz(Ek_all, Dk_all, Fsq_new, k);
+        else
+            try
+                opts_eig.tol = tol;
+                opts_eig.v0 = ones(s_new, 1);
+                [Ek_raw_new, Dk_new] = eigs(Fsq_new, G_new, ...
+                                            k, 'LM', opts_eig);
+                [~, ord] = sort(abs(diag(Dk_new)));
+                Ek = real(Ek_raw_new(:, ord));
+            catch
+                [Ek_all, Dk_all] = eig(Fsq_new, G_new);
+                Ek = gmres_dr_pick_ritz(Ek_all, Dk_all, Fsq_new, k);
+            end
+        end
 
         % n-space Ritz vectors for next cycle
         Yk = V_cycle(:, 1:s_new) * Ek;  % n-by-k
@@ -700,4 +724,36 @@ function [x, flag, relresvec, kdvec, time] = ...
     kdvec = kdvec(1:nCycles + 1);
     time = toc();
 
+end
+
+% =========================================================================
+% ----> Local helper: select k harmonic Ritz vectors from a dense eig call
+%
+% Filters out non-finite eigenvalues (arise when G is singular), sorts
+% the remaining ones by ascending |lambda|, and returns the k smallest.
+% If fewer than k finite eigenpairs exist, falls back to the standard
+% (non-generalized) eigenproblem on F alone to guarantee k vectors.
+%
+% Inputs:
+%   Ek_all : s-by-s matrix of eigenvectors from eig(F, G)
+%   Dk_all : s-by-s diagonal matrix of eigenvalues from eig(F, G)
+%   F      : s-by-s matrix for the fallback eig(F) call
+%   k      : number of Ritz vectors to return
+%
+% Output:
+%   Ek     : s-by-k real matrix of selected Arnoldi-space eigenvectors
+% =========================================================================
+
+function Ek = gmres_dr_pick_ritz(Ek_all, Dk_all, F, k)
+    d_all = abs(diag(Dk_all));
+    valid = find(isfinite(d_all));
+    if numel(valid) >= k
+        [~, ord] = sort(d_all(valid));
+        Ek = real(Ek_all(:, valid(ord(1:k))));
+    else
+        [Ek_fb, Dk_fb] = eig(F);
+        d_fb = abs(diag(Dk_fb));
+        [~, ord] = sort(d_fb);
+        Ek = real(Ek_fb(:, ord(1:k)));
+    end
 end
