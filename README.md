@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="kyrsbas_logo.png" alt="KrySBAS logo" width="250"/>
-</p>
-
 [![MATLAB tests](https://github.com/nidtec-una/krysbas-dev/actions/workflows/matlab_tests.yaml/badge.svg)](https://github.com/nidtec-una/krysbas-dev/actions/workflows/matlab_tests.yaml)
 [![code_style](https://github.com/nidtec-una/krysbas-dev/actions/workflows/code_style.yml/badge.svg)](https://github.com/nidtec-una/krysbas-dev/actions/workflows/code_style.yml)
 [![codecov](https://codecov.io/gh/nidtec-una/krysbas-dev/graph/badge.svg?token=SRZNZEIBB7)](https://codecov.io/gh/nidtec-una/krysbas-dev)
@@ -10,7 +6,12 @@
 
 # KrySBAS: Krylov Subspace-Based Adaptive Solvers
 
-KrySBAS is a free and open-source toolbox of adaptive iterative solvers for sparse linear systems (*Ax = b*), based on Krylov subspaces. It is available for both **MATLAB** and **Julia**.
+<p align="center">
+  <img src="kyrsbas_logo.png" alt="KrySBAS logo" width="250"/>
+</p>
+
+
+KrySBAS is a free and open-source toolbox of adaptive iterative solvers for sparse linear systems (*Ax = b*), based on Krylov subspaces. It is available for both **MATLAB/GNU-Octave** and **Julia**.
 
 The toolbox is developed by the [Scientific Computing and Applied Mathematics](https://nidtec.pol.una.py/ccyma/) group at the [NIDTEC](https://nidtec.pol.una.py/) research center of the [Polytechnic Faculty, National University of Asunción, Paraguay](https://www.pol.una.py/).
 
