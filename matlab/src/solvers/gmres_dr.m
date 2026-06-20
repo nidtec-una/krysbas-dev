@@ -6,26 +6,49 @@ function [x, flag, relresvec, kdvec, time] = ...
     %   ------------
     %
     %   GMRES-DR ("GMRES with Deflated Restarting") is a restarted GMRES
-    %   variant that deflates a k-dimensional invariant subspace at every
-    %   restart by recycling the k harmonic Ritz vectors from the previous
-    %   cycle directly into the starting basis of the next cycle.
+    %   variant that recycles k harmonic Ritz vectors across restart cycles
+    %   to accelerate convergence by deflating the k smallest eigenvalues.
     %
-    %   Unlike GMRES-E(m, d), which augments a fresh Krylov subspace of
-    %   dimension m with d extra eigenvectors (total dimension m + d),
-    %   GMRES-DR(m, k) keeps the subspace dimension fixed at m per cycle:
-    %   the first k basis vectors are the recycled Ritz vectors and the
-    %   remaining m - k vectors come from a standard Arnoldi process started
-    %   at the normalized, deflated residual.
+    %   Unlike GMRES-E(m, d), which augments a fresh m-step Krylov subspace
+    %   with d extra eigenvectors (total dimension m + d), GMRES-DR(m, k)
+    %   keeps the subspace dimension fixed at m per cycle: the first keep
+    %   basis vectors are the recycled Schur vectors (keep <= k, see below)
+    %   and the remaining m - keep vectors come from standard Arnoldi.
     %
-    %   A key efficiency property: the first k columns of the Hessenberg
-    %   matrix for each restart cycle can be formed without any new
-    %   matrix-vector products, reusing the Arnoldi factorization from the
-    %   previous cycle (see subsection 2.3 of [1]).
+    %   This implementation follows Morgan (2002) and uses:
     %
-    %   Convergence is accelerated because the recycled Ritz vectors
-    %   approximate the invariant subspace associated with the k smallest
-    %   eigenvalues; deflating these eigenvalues reduces the effective
-    %   condition number seen by the remaining GMRES iterations.
+    %   (a) INCREMENTAL QR (qrupdate_gs): the thin QR of the growing
+    %       Hessenberg H is updated column by column via modified
+    %       Gram-Schmidt.  This avoids refactorising H at every step and
+    %       provides a cheap residual-norm estimate at each inner iteration.
+    %
+    %   (b) SCHUR-BASED HARMONIC RITZ: the harmonic Ritz problem is solved
+    %       via the explicit harmonic matrix
+    %
+    %         Ht = H_sq + h_{m+1,m}^2 * (H_sq' \ e_m) * e_m'
+    %
+    %       followed by a real Schur decomposition and ordschur reordering.
+    %       This is numerically more stable than the generalized eigenvalue
+    %       formulation eigs(F, G, k, 'LM') used in GMRES-E, which can fail
+    %       when G = Rs'*Rs is ill-conditioned.
+    %
+    %   (c) THICK RESTART via orthogonal basis rotation (Morgan 2002,
+    %       Wu & Simon 1999): the k Schur vectors Pk and the residual
+    %       direction rc are combined into a new (keep+1)-column basis
+    %       Pkp1 via thin QR.  The Hessenberg and V are then updated as
+    %
+    %         H  <-- Pkp1' * H * Pk     (now (keep+1)-by-keep)
+    %         V  <-- V * Pkp1           (rotate basis in-place)
+    %         Vr <-- Pkp1' * rc         (residual in new coordinates)
+    %
+    %       This is a pure orthogonal transformation: no matrix-vector
+    %       products with A are needed for the recycle step, and no
+    %       approximation of A*Vk from a previous factorisation is used.
+    %
+    %   (d) 2x2 SCHUR BLOCK HANDLING: when the (k+1,k) entry of the
+    %       ordered Schur form T is non-zero, a complex conjugate pair
+    %       straddles the cut.  We set keep = k+1 to avoid splitting the
+    %       pair, and reduce back to k at the next restart.
     %
     %   Signature:
     %   ----------
@@ -49,8 +72,8 @@ function [x, flag, relresvec, kdvec, time] = ...
     %               1 <= m <= n.  Default: min(n, 10).
     %
     %   k:          int, optional
-    %               Number of harmonic Ritz vectors to deflate and recycle
-    %               at each restart.  Must satisfy 0 < k < m.
+    %               Number of harmonic Ritz vectors to recycle at each
+    %               restart.  Must satisfy 0 < k < m.
     %               Default: min(m - 1, 3).
     %               Setting k = 0 falls back to standard restarted GMRES(m).
     %
@@ -72,65 +95,20 @@ function [x, flag, relresvec, kdvec, time] = ...
     %               Approximate solution to Ax = b.
     %
     %   flag:       integer (0 or 1)
-    %               1 if the relative residual satisfies relresvec(end) < tol
-    %               within maxit cycles; 0 otherwise.
+    %               1 if ||r||/||r0|| < tol within maxit cycles; 0 otherwise.
     %
     %   relresvec:  (cycles+1)-by-1 vector
-    %               Relative residual norm after each cycle, starting from 1
-    %               (the initial relative residual).
+    %               Relative residual norm after each cycle, starting from 1.
+    %               Estimated from the Arnoldi-space residual norm, which
+    %               equals the true residual norm when the Arnoldi relation
+    %               A*V = V_ext*H holds exactly.
     %
     %   kdvec:      (cycles+1)-by-1 vector
-    %               Krylov subspace dimension used at the corresponding cycle.
-    %               For GMRES-DR this is m at every cycle (except possibly the
-    %               last if happy breakdown occurs).
+    %               Krylov subspace dimension used at each cycle.  Equals m
+    %               at every full cycle; may be smaller at early exit.
     %
     %   time:       float
     %               Wall-clock time in seconds.
-    %
-    %
-    %   Algorithm Outline:
-    %   ------------------
-    %
-    %   Cycle 1 (no Ritz vectors available yet):
-    %     1. Arnoldi: build an (m+1)-by-m Hessenberg H and an n-by-m
-    %        orthonormal basis V via modified_gram_schmidt_arnoldi.
-    %     2. Least-squares: solve min ||beta*e1 - H*y|| via plane_rotations.
-    %     3. Update: x = x0 + V * y.
-    %     4. Convergence check.
-    %     5. Ritz: compute k harmonic Ritz pairs via harmonic_ritz_vectors.
-    %        Keep the Ritz vectors Yk = V * Ek (n-by-k) and the
-    %        Arnoldi-space eigenvectors Ek (m-by-k).
-    %
-    %   Cycles 2, 3, ... (deflated restarts):
-    %     6. QR: orthonormalize Yk -> [Vk, Rk] (thin QR).
-    %        Vk (n-by-k) is the new deflation basis; Rk (k-by-k) is the
-    %        upper-triangular factor.
-    %     7. Residual: compute rc = b - A*x.  Orthogonalize rc against Vk
-    %        (modified Gram-Schmidt) to obtain the deflated residual r_tilde
-    %        and v_{k+1} = r_tilde / ||r_tilde||.
-    %     8. Free columns of H (no new matrix-vector products):
-    %        Using the previous Arnoldi factorization A*Vprev = Vprev_ext*Hprev,
-    %        express A*Vk as a linear combination of Vprev_ext.  Then project
-    %        onto the new basis [Vk, v_{k+1}] to fill H(:, 1:k).
-    %        Details: let F = Ek / Rk  (m-by-k, coefficients of Vk in Vprev),
-    %                     T = Hprev * Ek / Rk  ((m+1)-by-k),
-    %           H(1:k,   1:k) = F' * T(1:m, :),
-    %           H(k+1,   1:k) = g_tilde' * T / ||g_tilde||
-    %        where g_tilde is the Arnoldi-space representation of r_tilde:
-    %           g_res   = beta_prev*e1 - Hprev*yprev   (previous GMRES residual)
-    %           g_tilde = [(I - F*F') * g_res(1:m);  g_res(m+1)]
-    %     9. Arnoldi extension: run m - k standard Arnoldi steps from v_{k+1},
-    %        orthogonalising against all of [Vk, v_{k+1}, ...] to fill
-    %        H(:, k+1:m) and V(:, k+2:m+1).
-    %    10. Least-squares: the right-hand side phi for this cycle is not
-    %        beta*e1 but rather the projection of rc onto the new basis:
-    %           phi(1:k)   = Vk' * rc  (from step 7's Gram-Schmidt coefficients)
-    %           phi(k+1)   = ||r_tilde||
-    %           phi(k+2:m+1) = 0
-    %        Solve min ||phi - H*y|| using MATLAB's backslash on the full
-    %        (m+1)-by-m system.
-    %    11. Update: x = x + V * y.  Convergence check.
-    %    12. Ritz: compute k new harmonic Ritz pairs for the next cycle.
     %
     %
     %   References:
@@ -138,6 +116,10 @@ function [x, flag, relresvec, kdvec, time] = ...
     %
     %   [1] Morgan, R. B. (2002). GMRES with deflated restarting.
     %   SIAM Journal on Scientific Computing, 24(1), 20-37.
+    %
+    %   [2] Wu, K., & Simon, H. (2000). Thick-restart Lanczos method for
+    %   large symmetric eigenvalue problems. SIAM Journal on Matrix
+    %   Analysis and Applications, 22(2), 602-616.
     %
     %
     %   Copyright:
@@ -175,12 +157,10 @@ function [x, flag, relresvec, kdvec, time] = ...
     % ----> Sanity checks on matrix A
     % =========================================================================
 
-    % Check whether A is non-empty
     if isempty(A)
         error("Matrix A cannot be empty.");
     end
 
-    % Check whether A is square
     [rowsA, colsA] = size(A);
     if rowsA ~= colsA
         error("Matrix A must be square.");
@@ -193,18 +173,15 @@ function [x, flag, relresvec, kdvec, time] = ...
     % ----> Sanity checks on vector b
     % =========================================================================
 
-    % Check whether b is non-empty
     if isempty(b)
         error("Vector b cannot be empty.");
     end
 
-    % Check whether b is a column vector
     [rowsb, colsb] = size(b);
     if colsb ~= 1
         error("Vector b must be a column vector.");
     end
 
-    % Check whether b has the correct number of rows
     if rowsb ~= n
         error("Dimension mismatch between matrix A and vector b.");
     end
@@ -219,7 +196,6 @@ function [x, flag, relresvec, kdvec, time] = ...
         m = min(n, 10);
     end
 
-    % m == n: fall back to built-in unrestarted GMRES
     if m == n
         tic();
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b);
@@ -243,7 +219,6 @@ function [x, flag, relresvec, kdvec, time] = ...
         k = min(m - 1, 3);
     end
 
-    % k == 0: no deflation, fall back to built-in restarted GMRES(m)
     if k == 0
         tic();
         [gmres_x, gmres_flag, ~, ~, resvec] = gmres(A, b, m);
@@ -255,8 +230,6 @@ function [x, flag, relresvec, kdvec, time] = ...
         return
     end
 
-    % k must be strictly less than m so that at least one Arnoldi step is
-    % performed per cycle beyond the deflation vectors.
     if k >= m
         error("k must satisfy: 0 < k < m.");
     end
@@ -310,438 +283,221 @@ function [x, flag, relresvec, kdvec, time] = ...
     % =========================================================================
 
     flag = 0;
+    x    = xInitial;
+    r0   = b - A * x;
+    beta = norm(r0);    % initial residual norm (used for relative scaling)
 
-    % Initial residual and its norm
-    r0 = b - A * xInitial;
-    res0 = norm(r0);
-
-    % Relative residual history (entry 1 = before any iteration = 1.0)
+    % Relative residual and dimension history (one entry per cycle)
     relresvec = zeros(maxit + 1, 1);
     relresvec(1) = 1.0;
+    kdvec   = zeros(maxit + 1, 1);
+    n_cycles = 0;
 
-    % Krylov dimension history (one entry per cycle)
-    kdvec = zeros(maxit + 1, 1);
-
-    nCycles = 0;  % number of completed cycles
+    % ------------------------------------------------------------------
+    % Arnoldi basis V: pre-allocated for m + 1 columns.  After each
+    % thick restart, columns 1:keep+1 are overwritten; the rest are
+    % filled by the next Arnoldi extension.
+    % Vr: coordinates of the current residual in the V-basis.
+    %     Initially just [beta] (single scalar, since V(:,1) = r/beta).
+    % H:  Hessenberg matrix, grown column-by-column during Arnoldi and
+    %     shrunk to (keep+1)-by-keep after each thick restart.
+    % keep: number of Schur vectors recycled from the previous cycle.
+    %       Starts at 0 (no recycling on the first cycle).
+    % ------------------------------------------------------------------
+    V  = zeros(n, m + 1);
+    V(:, 1) = r0 / beta;
+    vr   = beta;        % (j+1)-vector grown as Arnoldi proceeds
+    H    = zeros(0, 0); % empty; grows to (m+1)-by-m over the cycle
+    keep = 0;           % no recycled vectors yet
 
     tic();  % start wall-clock timer
 
-    % =========================================================================
-    % ----> Cycle 1: standard GMRES(m) (no Ritz vectors available yet)
-    % =========================================================================
-
-    beta = res0;
-    v1 = r0 / beta;
-
-    % Arnoldi factorisation: A * V(:,1:s) = V(:,1:s+1) * H(1:s+1,1:s)
-    % s may be less than m if happy breakdown occurs.
-    [H, V, s] = modified_gram_schmidt_arnoldi(A, v1, m);
-
-    % QR factorisation of H via Givens rotations; the rotated RHS g has
-    % |g(s+1)| = ||r|| (the residual norm after this cycle).
-    [HUpTri, g] = plane_rotations(H, beta);
-
-    % Solve the triangular least-squares system
-    Rs = HUpTri(1:s, 1:s);
-    yprev = Rs \ g(1:s);
-
-    % Update solution
-    x = xInitial + V * yprev;
-
-    nCycles = nCycles + 1;
-    relresvec(nCycles + 1) = abs(g(s + 1)) / res0;
-    kdvec(nCycles + 1) = s;
-
-    % Check convergence after cycle 1
-    if relresvec(nCycles + 1) < tol
-        flag = 1;
-        relresvec = relresvec(1:nCycles + 1);
-        kdvec = kdvec(1:nCycles + 1);
-        time = toc();
-        return
-    end
-
-    % Store data from cycle 1 needed by subsequent deflated restarts:
-    %   Hprev   : the (s+1)-by-s Hessenberg from the previous cycle
-    %   Vprev   : the n-by-(s+1) Arnoldi basis (includes v_{s+1})
-    %   g_res   : the GMRES residual in Arnoldi-space coordinates,
-    %             defined as  g_res = beta*e1 - H*yprev
-    %             Note: by construction, Vprev_ext * g_res = rc
-    %   beta_eff: ||r0|| for cycle 1 (used to form g_res)
-    Hprev = H;  % (s+1)-by-s, possibly truncated by happy breakdown
-    % Vprev_ext = [V(:,1:s), v_{s+1}] where v_{s+1} is stored in
-    % the (s+1)-th column only when s < m (happy breakdown gives V with s cols).
-    % In the non-breakdown case modified_gram_schmidt_arnoldi returns V with s
-    % columns (= m columns); the (s+1)-th Arnoldi vector is NOT stored in V
-    % because it is not needed for the GMRES update.  We therefore have to
-    % reconstruct it when s == m (no breakdown):
-    %
-    %   v_{m+1} = (A*v_m - V*H(:,m)) / H(m+1,m)
-    %
-    % This costs one extra matrix-vector product (1 matvec) at the end of
-    % cycle 1 only.  All subsequent cycles use the efficient no-matvec
-    % formula for the first k columns of H.
-    if s == m
-        % No happy breakdown: reconstruct v_{m+1} for the deflated restart.
-        % A*v_m is already "inside" the Arnoldi recurrence but not stored.
-        w_last = A * V(:, s);
-        for i = 1:s
-            w_last = w_last - H(i, s) * V(:, i);
-        end
-        % H(s+1, s) is the subdiagonal entry; v_{s+1} = w_last / H(s+1, s).
-        v_ext = w_last / H(s + 1, s);
-        Vprev_ext = [V, v_ext];  % n-by-(s+1)
-    else
-        % Happy breakdown: V already contains s columns; H(s+1,s) == 0 and
-        % there is no (s+1)-th Arnoldi vector (the Krylov subspace is
-        % invariant).  In this case, the algorithm should have converged.
-        Vprev_ext = V;  % n-by-s (exceptional, convergence was missed above)
-    end
-
-    % Arnoldi-space residual from cycle 1:
-    %   g_res is an (s+1)-by-1 vector satisfying  Vprev_ext * g_res = rc.
-    g_res = zeros(s + 1, 1);
-    g_res(1) = beta;
-    g_res = g_res - Hprev * yprev;  % = beta*e1 - H*y
-
-    % Harmonic Ritz computation for the first deflated restart.
-    % F_eig  : m-by-k matrix whose columns are the eigenvectors of the
-    %          k-smallest harmonic Ritz problem in Arnoldi-space coordinates.
-    % The existing helper harmonic_ritz_vectors(F, G, k, V, tol) needs:
-    %   F = H(1:s,1:s)'   (the square part transposed)
-    %   G = Rs'*Rs         (Gram matrix from the least-squares QR)
-    %   k = number of Ritz vectors wanted
-    %   V = the Arnoldi basis (for forming n-space Ritz vectors)
-    Fsq = Hprev(1:s, 1:s)';
-    G = Rs' * Rs;
-    % harmonic_ritz_vectors returns dy: n-by-k matrix of Ritz vectors in
-    % the physical (n-dimensional) space, and implicitly uses Ek internally.
-    % We need both the n-space vectors AND the Arnoldi-space eigenvectors Ek
-    % to build the deflated Hessenberg efficiently.  Because the existing
-    % function does not return Ek, we re-solve the generalized eigenvalue
-    % problem here to obtain it.
-    %
-    % Generalized eigenvalue problem (harmonic Ritz, [1] p. 1161, step 5):
-    %   Fsq * u = lambda * G * u
-    % Take the k eigenpairs with smallest |lambda|; columns of Ek are the
-    % eigenvectors in Arnoldi space; n-space Ritz vectors are Vk = V * Ek.
-    opts_eig.tol = tol;
-    opts_eig.v0 = ones(s, 1);
-    [Ek_raw, Dk] = eigs(Fsq, G, k, 'LM', opts_eig);
-
-    % Sort by ascending |eigenvalue| to get the k smallest
-    [~, idx] = sort(abs(diag(Dk)));
-    % Take real part: for a real problem the imaginary components of the
-    % harmonic Ritz vectors are numerical noise introduced by eigs.
-    Ek = real(Ek_raw(:, idx));  % s-by-k, Arnoldi-space eigenvectors
-
-    % n-space Ritz vectors (before orthonormalization)
-    Yk = V * Ek;  % n-by-k
-
-    % =========================================================================
-    % ----> Deflated restart cycles (cycles 2, 3, ...)
-    % =========================================================================
-
-    for cycle = 2:maxit
+    for cycle = 1:maxit
 
         % ------------------------------------------------------------------
-        % Step 1: QR-orthonormalize the Ritz vectors and detect rank.
-        %
-        % Vk (n-by-k, orthonormal) and Rk_qr (k-by-k upper triangular)
-        % satisfy  Yk = Vk * Rk_qr.
-        %
-        % ROOT-CAUSE OF NUMERICAL FAILURE:
-        % After enough restart cycles the harmonic Ritz values converge
-        % toward true eigenvalues.  When two Ritz values are nearly equal
-        % (clustered eigenvalues) their Ritz vectors become almost parallel.
-        % The j-th diagonal of Rk_qr, which equals the norm of the j-th
-        % column of Yk after removing the contribution of columns 1,...,j-1,
-        % then drops toward zero.  Computing  Ek_norm = Ek / Rk_qr  with a
-        % near-zero diagonal is equivalent to dividing by zero: Ek_norm
-        % gets huge entries, T = Hprev*Ek_norm blows up, H_def becomes
-        % ill-conditioned, and the backslash solve or the subsequent eigs
-        % call fails.
-        %
-        % FIX (rank-revealing truncation):
-        % Compute k_eff = the number of diagonals of Rk_qr that exceed a
-        % threshold relative to the largest diagonal.  Retain only those
-        % k_eff columns; the remaining k - k_eff vectors are numerically
-        % dependent on the accepted ones and are silently dropped for this
-        % cycle.  The Arnoldi extension then runs for m - k_eff steps
-        % (instead of m - k), so the total subspace dimension stays at m.
-        % k_eff is strictly local to this cycle; the next cycle recomputes
-        % fresh Ritz vectors and re-evaluates k_eff independently.
+        % Each cycle targets a total subspace of dimension m.
+        %   - Columns 1:keep of V are the recycled Schur vectors (already
+        %     set by the previous thick restart, or empty on cycle 1).
+        %   - Columns keep+1:m are added by the Arnoldi extension below.
+        %   - Column m+1 is a temporary workspace for the last Arnoldi
+        %     vector (not used in the least-squares solve).
         % ------------------------------------------------------------------
-        % Column-pivoting thin QR: Yk * Pmat = Vk * Rk_qr, where Pmat is a
-        % k-by-k permutation matrix.  Column pivoting is ESSENTIAL here:
-        % it guarantees that the diagonal entries of Rk_qr are in strictly
-        % decreasing order of magnitude, so the leading k_eff-by-k_eff
-        % sub-block is always the best-conditioned subset.  Without pivoting
-        % a near-zero diagonal can appear anywhere in Rk_qr, causing
-        % Rk_qr(1:k_eff,1:k_eff) to remain singular even after truncation.
-        [Vk, Rk_qr, Pmat] = qr(Yk, 0);
 
-        % Octave returns P as a permutation VECTOR with the 0 flag; MATLAB
-        % may return it as a permutation MATRIX.  Normalize to a vector so
-        % that column indexing Ek(:, perm(1:k_eff)) works in both cases.
-        if isvector(Pmat)
-            perm = Pmat(:)';   % ensure row vector  [p1, p2, ..., pk]
-        else
-            [~, perm] = max(Pmat);  % permutation matrix -> row vector
+        % Initialise the incremental QR for the carry-over H block.
+        % On cycle 1 (keep=0), q_qr and r_qr start empty.
+        % On later cycles, H(1:keep+1, 1:keep) holds the rotated block
+        % from the previous thick restart; qrupdate_gs processes it first.
+        q_qr = zeros(keep + 1, 0);
+        r_qr = zeros(0, 0);
+        if keep > 0
+            [q_qr, r_qr] = qrupdate_gs(H, q_qr, r_qr);
         end
 
-        % Rank-revealing threshold on the (now sorted) diagonals of Rk_qr.
-        % sqrt(eps) ~ 1e-8: keeps vectors whose independent component is at
-        % least sqrt(eps) times the strongest Ritz vector direction.
-        diag_R = abs(diag(Rk_qr));
-        k_eff  = sum(diag_R > diag_R(1) * sqrt(eps));
-
-        % Truncate to the k_eff independent columns.
-        Vk    = Vk(:, 1:k_eff);
-        Rk_qr = Rk_qr(1:k_eff, 1:k_eff);   % well-conditioned by pivoting
-
-        % Arnoldi-space coefficient matrix via column indexing (avoids the
-        % matrix-vs-vector ambiguity of Pmat):
-        %   Ek_norm = Ek(:, perm(1:k_eff)) / Rk_qr
-        % Rk_qr is guaranteed well-conditioned (all diagonals >= threshold).
-        Ek_norm = Ek(:, perm(1:k_eff)) / Rk_qr;  % s-by-k_eff
+        % Allocate (m+1)-by-m Hessenberg for this cycle, copying the
+        % carry-over block into the top-left corner.
+        H_cycle = zeros(m + 1, m);
+        H_cycle(1:size(H, 1), 1:size(H, 2)) = H;
+        H = H_cycle;
 
         % ------------------------------------------------------------------
-        % Step 2: Compute the current residual and deflate it.
+        % Arnoldi extension: add m - keep new basis vectors.
         %
-        % rc = b - A*x  (one matrix-vector product)
-        %
-        % Orthogonalize rc against Vk using modified Gram-Schmidt to obtain
-        % the deflated residual r_tilde and the (k+1)-th basis vector v_{k+1}.
-        %
-        % The Gram-Schmidt coefficients  hgs(i) = Vk(:,i)' * rc  are the
-        % first k entries of the RHS vector phi used in the least-squares
-        % problem (step 10 of the algorithm outline above).
+        % At each step j the loop:
+        %   1. Applies A to obtain a new candidate w = A * V(:, j).
+        %   2. Orthogonalises w against all previous V(:, 1:j) via MGS,
+        %      filling column j of H.
+        %   3. Updates the thin QR of H(1:j+1, 1:j) via qrupdate_gs.
+        %   4. Solves the incremental least-squares problem
+        %        min_{d} ||vr_c - H(1:j+1,1:j)*d||
+        %      where vr_c is vr extended to length j+1 (zero-padded).
+        %   5. Estimates the residual norm as ||rc|| = ||vr_c - H*d||.
+        %      This equals the true residual norm because the Arnoldi
+        %      relation gives ||b - A*(x+V*d)|| = ||V_ext * rc|| = ||rc||.
+        %   6. Exits early if convergence is detected.
         % ------------------------------------------------------------------
-        rc = b - A * x;
+        d  = zeros(m, 1);   % least-squares solution (updated each step)
+        rc = vr;            % Arnoldi-space residual (updated each step)
+        res = norm(vr);     % current residual norm estimate
 
-        % Modified Gram-Schmidt projection (against k_eff accepted vectors)
-        r_tilde = rc;
-        hgs = zeros(k_eff, 1);  % Gram-Schmidt coefficients (= phi(1:k_eff))
-        for i = 1:k_eff
-            hgs(i) = Vk(:, i)' * r_tilde;
-            r_tilde = r_tilde - hgs(i) * Vk(:, i);
-        end
+        for j = keep + 1:m
+            w = A * V(:, j);
 
-        norm_r_tilde = norm(r_tilde);
-
-        % Check for happy breakdown: rc is already in span(Vk)
-        if norm_r_tilde < eps * norm(rc)
-            % The residual lies (numerically) in the deflation subspace.
-            % The current x is the best approximation we can achieve with
-            % the deflation subspace alone; report relative residual and exit.
-            relresvec(nCycles + 2) = norm(rc) / res0;
-            kdvec(nCycles + 2) = k_eff;
-            nCycles = nCycles + 1;
-            flag = (relresvec(nCycles + 1) < tol);
-            relresvec = relresvec(1:nCycles + 1);
-            kdvec = kdvec(1:nCycles + 1);
-            time = toc();
-            return
-        end
-
-        v_kp1 = r_tilde / norm_r_tilde;  % v_{k+1}: (k+1)-th basis vector
-
-        % ------------------------------------------------------------------
-        % Step 3: Form the first k columns of the new Hessenberg matrix H
-        %         WITHOUT any new matrix-vector products.
-        %
-        % From the previous cycle's Arnoldi factorisation:
-        %   A * Vprev(:,1:s) = Vprev_ext * Hprev       (*)
-        % where Vprev_ext = [Vprev(:,1:s), v_{s+1}]  (n-by-(s+1)).
-        %
-        % The new deflation basis Vk satisfies:
-        %   Vk = Vprev(:,1:s) * Ek_norm
-        % so substituting into (*):
-        %   A * Vk = Vprev_ext * (Hprev * Ek_norm)    (**)
-        %
-        % Define  T = Hprev * Ek_norm   ((s+1)-by-k, cheap to compute).
-        % Then  A*Vk = Vprev_ext * T.
-        %
-        % The (i,j) entry of H(:, 1:k) is  v_i' * (A*v_j):
-        %
-        % For i = 1,...,k (deflation vectors):
-        %   v_i = Vprev(:,1:s) * Ek_norm(:,i)
-        %   v_i' * Vprev_ext = Ek_norm(:,i)' * [I_s, 0]  (only first s entries)
-        %   => H(i, j) = Ek_norm(:,i)' * T(1:s, j) = (Ek_norm' * T(1:s,:))(i,j)
-        %
-        % For i = k+1 (the deflated residual vector v_{k+1}):
-        %   v_{k+1}' * Vprev_ext = ?
-        %   We know  rc = Vprev_ext * g_res  (from step 7 of cycle 1, or the
-        %   analogous formula maintained across cycles), so the Arnoldi-space
-        %   image of rc under the previous basis is g_res.
-        %   The orthogonalised deflated residual r_tilde in Arnoldi space is:
-        %     g_tilde = [(I - Ek_norm*Ek_norm') * g_res(1:s);  g_res(s+1)]
-        %   and  v_{k+1} = r_tilde / norm_r_tilde
-        %                = Vprev_ext * g_tilde / ||g_tilde||.
-        %   Therefore:
-        %     v_{k+1}' * Vprev_ext = g_tilde' / norm_r_tilde
-        %   => H(k+1, j) = g_tilde' * T(:, j) / norm_r_tilde
-        % ------------------------------------------------------------------
-
-        % T = Hprev * Ek_norm  ((s+1)-by-k_eff)
-        T = Hprev * Ek_norm;
-
-        % Top k_eff-by-k_eff block: H(1:k_eff, 1:k_eff)
-        H_def = zeros(m + 1, m);  % full Hessenberg for this cycle
-        H_def(1:k_eff, 1:k_eff) = Ek_norm' * T(1:s, :);
-
-        % Arnoldi-space deflated residual (s+1-vector):
-        %   g_tilde(1:s)   = (I - Ek_norm*Ek_norm') * g_res(1:s)
-        %   g_tilde(s+1)   = g_res(s+1)
-        g_tilde = g_res;
-        g_tilde(1:s) = g_res(1:s) - Ek_norm * (Ek_norm' * g_res(1:s));
-
-        % Row k_eff+1 of H's first k_eff columns
-        H_def(k_eff + 1, 1:k_eff) = (g_tilde' * T) / norm_r_tilde;
-
-        % ------------------------------------------------------------------
-        % Step 4: Assemble the full Arnoldi basis for this cycle.
-        %
-        % The basis V_cycle is n-by-(m+1):
-        %   V_cycle(:, 1:k)     = Vk   (deflation vectors, already computed)
-        %   V_cycle(:, k+1)     = v_{k+1}  (deflated residual direction)
-        %   V_cycle(:, k+2:m+1) = filled by Arnoldi extension below
-        % ------------------------------------------------------------------
-        V_cycle = zeros(n, m + 1);
-        V_cycle(:, 1:k_eff) = Vk;
-        V_cycle(:, k_eff + 1) = v_kp1;
-
-        % ------------------------------------------------------------------
-        % Step 5: Arnoldi extension from v_{k+1} for m - k additional steps.
-        %
-        % At step j (j = k+1, ..., m), we compute:
-        %   w = A * V_cycle(:, j)
-        %   Orthogonalise w against V_cycle(:, 1:j)   (all previous vectors)
-        %   H(1:j+1, j) = Gram-Schmidt coefficients
-        %   V_cycle(:, j+1) = w / H(j+1, j)
-        %
-        % This fills H_def(:, k+1:m) and V_cycle(:, k+2:m+1).
-        % ------------------------------------------------------------------
-        s_new = m;  % will be updated on happy breakdown
-        for j = k_eff + 1:m
-            w = A * V_cycle(:, j);
+            % Modified Gram-Schmidt orthogonalisation against all V(:,1:j)
             for i = 1:j
-                H_def(i, j) = w' * V_cycle(:, i);
-                w = w - H_def(i, j) * V_cycle(:, i);
+                H(i, j) = V(:, i)' * w;
+                w = w - H(i, j) * V(:, i);
             end
-            H_def(j + 1, j) = norm(w);
+            H(j + 1, j) = norm(w);
+            V(:, j + 1)  = w / H(j + 1, j);
 
-            if H_def(j + 1, j) == 0
-                % Happy breakdown: Krylov subspace is invariant.
-                s_new = j;
-                V_cycle = V_cycle(:, 1:s_new);
-                H_def = H_def(1:s_new + 1, 1:s_new);
-                break
-            else
-                V_cycle(:, j + 1) = w / H_def(j + 1, j);
+            % Extend vr with a zero so it matches the new (j+1) dimension.
+            % This reflects that V(:,j+1) is orthogonal to all of r.
+            vr_c = [vr; zeros(j + 1 - length(vr), 1)]; %#ok<AGROW>
+
+            % Incremental QR update: add column j to the factorisation
+            [q_qr, r_qr] = qrupdate_gs(H(1:j + 1, 1:j), q_qr, r_qr);
+
+            % Least-squares solve via the updated QR
+            d  = r_qr \ (q_qr' * vr_c);
+            rc = vr_c - H(1:j + 1, 1:j) * d;
+            res = norm(rc);
+
+            % Convergence check (relative to initial residual beta)
+            if res < tol * beta
+                x = x + V(:, 1:j) * d;
+                n_cycles = n_cycles + 1;
+                relresvec(n_cycles + 1) = res / beta;
+                kdvec(n_cycles + 1)     = j;
+                flag = 1;
+                relresvec = relresvec(1:n_cycles + 1);
+                kdvec     = kdvec(1:n_cycles + 1);
+                time = toc();
+                return
             end
         end
 
         % ------------------------------------------------------------------
-        % Step 6: Solve the least-squares problem for this cycle.
-        %
-        % The right-hand side phi is NOT beta*e1 (as in standard GMRES) but
-        % instead the projection of rc onto the new basis [Vk, v_{k+1}, ...]:
-        %
-        %   phi(1:k)        = hgs      (Gram-Schmidt coefficients from step 2)
-        %   phi(k+1)        = norm_r_tilde  (norm of deflated residual)
-        %   phi(k+2:s_new+1) = 0        (orthogonality from Arnoldi)
-        %
-        % Solve:  min_{y} || phi - H_def(1:s_new+1, 1:s_new) * y ||
-        %
-        % We use MATLAB's backslash (\) on the rectangular system because the
-        % RHS phi is not of the beta*e1 form required by plane_rotations.
+        % End of Arnoldi loop: update the solution and record history.
         % ------------------------------------------------------------------
-        phi = zeros(s_new + 1, 1);
-        phi(1:k_eff) = hgs;
-        phi(k_eff + 1) = norm_r_tilde;
+        x = x + V(:, 1:m) * d;
+        n_cycles = n_cycles + 1;
+        relresvec(n_cycles + 1) = res / beta;
+        kdvec(n_cycles + 1)     = m;
 
-        y = H_def(1:s_new + 1, 1:s_new) \ phi;
-
-        % ------------------------------------------------------------------
-        % Step 7: Update the approximate solution.
-        % ------------------------------------------------------------------
-        x = x + V_cycle(:, 1:s_new) * y;
-
-        nCycles = nCycles + 1;
-
-        % Relative residual for this cycle (exact residual norm)
-        r_new = b - A * x;
-        relresvec(nCycles + 1) = norm(r_new) / res0;
-        kdvec(nCycles + 1) = s_new;
-
-        % Check convergence
-        if relresvec(nCycles + 1) < tol
+        if relresvec(n_cycles + 1) < tol
             flag = 1;
-            relresvec = relresvec(1:nCycles + 1);
-            kdvec = kdvec(1:nCycles + 1);
+            relresvec = relresvec(1:n_cycles + 1);
+            kdvec     = kdvec(1:n_cycles + 1);
             time = toc();
             return
         end
 
         % ------------------------------------------------------------------
-        % Step 8: Compute k new harmonic Ritz pairs for the next cycle.
+        % Harmonic Ritz computation via real Schur decomposition.
         %
-        % The generalized eigenvalue problem is the same as in GMRES-E:
-        %   H(1:s,1:s)' * u = lambda * (Rs_new' * Rs_new) * u
-        % where Rs_new comes from a QR factorisation of H_def.
+        % The harmonic Ritz matrix is formed explicitly (Morgan 2002, eq. 4):
         %
-        % Rather than calling the existing harmonic_ritz_vectors helper
-        % (which does not return Ek), we repeat the eigenvalue computation
-        % here to obtain both the n-space Ritz vectors (Yk) and the
-        % basis-space eigenvectors (Ek) needed for the next cycle's free
-        % columns of H.
-        % ------------------------------------------------------------------
-
-        % QR factorisation of the Hessenberg (for G = Rs'*Rs)
-        [~, Rs_new] = qr(H_def(1:s_new + 1, 1:s_new), 0);
-        Rs_new = Rs_new(1:s_new, :);
-
-        Fsq_new = H_def(1:s_new, 1:s_new)';
-        G_new = Rs_new' * Rs_new;
-
-        opts_eig.v0 = ones(s_new, 1);
-        [Ek_raw_new, Dk_new] = eigs(Fsq_new, G_new, k, 'LM', opts_eig);
-        [~, idx_new] = sort(abs(diag(Dk_new)));
-        % Take real part: imaginary components are numerical noise from eigs.
-        Ek = real(Ek_raw_new(:, idx_new));  % s_new-by-k
-
-        % n-space Ritz vectors for next cycle
-        Yk = V_cycle(:, 1:s_new) * Ek;  % n-by-k
-
-        % ------------------------------------------------------------------
-        % Step 9: Store previous-cycle data needed for the next deflated
-        %         restart's free-column computation.
+        %   Ht = H_sq + h_{m+1,m}^2 * (H_sq' \ e_m) * e_m'
         %
-        % Hprev : Hessenberg from this cycle  ((s_new+1)-by-s_new)
-        % g_res : Arnoldi-space image of the new residual r_new.
-        %         Satisfies  V_cycle * g_res = b - A*x_new  (= r_new),
-        %         which follows from the Arnoldi relation
-        %           A*V_cycle(:,1:s_new) = V_cycle * H_def
-        %         and from  r_new = V_cycle*phi - V_cycle*(H_def*y).
-        %         V_cycle itself need NOT be stored: the free-column formula
-        %         for the NEXT cycle uses only Hprev, Ek_norm, g_res, and s.
-        % s     : subspace dimension of this cycle (= s_new, used as array
-        %         size in the next cycle's Arnoldi-space computations)
+        % where H_sq = H(1:m, 1:m) is the square part of the Hessenberg
+        % and e_m is the m-th standard basis vector.  The eigenvalues of Ht
+        % are the harmonic Ritz values.
+        %
+        % We compute the REAL Schur decomposition [X,T] = schur(Ht) and
+        % reorder it via ordschur to move the k Schur vectors with smallest
+        % |eigenvalue| to the front.  This avoids the generalized eigenvalue
+        % problem eigs(F, G) used in GMRES-E, which fails when G is singular.
+        % The real Schur form also handles complex conjugate pairs naturally
+        % (they appear as 2x2 blocks in T) without needing to force real().
         % ------------------------------------------------------------------
-        Hprev = H_def;
-        g_res = phi - H_def(1:s_new + 1, 1:s_new) * y;
-        s = s_new;
+        h_sub = H(m + 1, m);   % subdiagonal entry of last Arnoldi step
+        emk = zeros(m, 1);
+        emk(m) = 1;
+        ht    = H(1:m, 1:m) + h_sub^2 * (H(1:m, 1:m)' \ emk) * emk';
 
-    end  % deflated restart loop
+        [s_vecs, s_vals] = schur(ht);   % Ht = s_vecs * s_vals * s_vecs'
+        ritz = ordeig(s_vals);          % eigenvalues of ht in Schur order
+
+        [~, ind] = sort(abs(ritz), 'ascend');
+        sel = false(m, 1);
+        sel(ind(1:k)) = true;
+        [s_vecs, s_vals] = ordschur(s_vecs, s_vals, sel);
+
+        % ------------------------------------------------------------------
+        % 2x2 block check: if T(k+1,k) ~= 0, the cut falls inside a 2x2
+        % diagonal block of the real Schur form, which represents a complex
+        % conjugate pair.  Including one eigenvalue of a conjugate pair but
+        % not the other would break the real-arithmetic invariant.  We set
+        % keep = k+1 to include the full block; it reverts to k at the next
+        % restart once the pair has been reordered safely.
+        % ------------------------------------------------------------------
+        if k > 0 && s_vals(k + 1, k) ~= 0
+            keep = k + 1;
+        else
+            keep = k;
+        end
+
+        % ------------------------------------------------------------------
+        % Thick restart: orthogonal basis rotation.
+        %
+        % Let Pk = s_vecs(:, 1:keep) (the selected Schur vectors, m-by-keep).
+        % We construct the new (m+1)-by-(keep+1) basis Pkp1 by:
+        %   1. Extending Pk with a zero bottom row: [(m-by-keep); (1-by-keep)]
+        %   2. Appending rc (the current Arnoldi-space residual vector):
+        %      the last column of Pkp1 will be the normalized residual
+        %      direction after removing its Pk components.
+        %   3. Thin QR of the result to make Pkp1 orthonormal.
+        %   4. SIGN CORRECTION: restore the first keep columns to Pk exactly.
+        %      The QR can flip column signs arbitrarily; without this step
+        %      the recycled H block would have sign errors that corrupt
+        %      convergence.
+        %
+        % After this, the thick-restart updates are:
+        %   H  <-- Pkp1' * H(1:m+1, 1:m) * Pk    (now (keep+1)-by-keep)
+        %   V(:,1:keep+1) <-- V(:,1:m+1) * Pkp1   (rotate basis)
+        %   vr <-- Pkp1' * rc                      (residual coordinates)
+        %
+        % The V update overwrites only columns 1:keep+1; columns keep+2:m+1
+        % are filled by the Arnoldi extension in the next cycle.
+        % ------------------------------------------------------------------
+        pk   = s_vecs(:, 1:keep);
+        pkp1 = [pk; zeros(1, keep)];     % extend Pk with a zero bottom row
+        pkp1 = [pkp1, rc];               % append residual direction
+        [pkp1, ~] = qr(pkp1, 0);         % orthonormalize
+        pkp1(1:m, 1:keep) = pk;          % restore sign of recycled columns
+
+        H = pkp1' * H(1:m + 1, 1:m) * pk;
+        V(:, 1:keep + 1) = V(:, 1:m + 1) * pkp1;
+        vr = pkp1' * rc;
+
+    end  % restart loop
 
     % =========================================================================
     % ----> Maximum number of cycles reached without convergence
     % =========================================================================
 
-    relresvec = relresvec(1:nCycles + 1);
-    kdvec = kdvec(1:nCycles + 1);
+    relresvec = relresvec(1:n_cycles + 1);
+    kdvec     = kdvec(1:n_cycles + 1);
     time = toc();
 
 end
