@@ -66,7 +66,14 @@ function [q_out, r_out] = qrupdate_gs(a, q_in, r_in)
     q_out = zeros(n_rows, n_cols);
     r_out = zeros(n_cols, n_cols);
 
-    q_out(:, 1:n_prev) = q_in;
+    % q_in may have fewer rows than n_rows: when the Hessenberg gains one
+    % row between consecutive calls (e.g. H grows from (j)x(j-1) to
+    % (j+1)xj), the caller passes the grown matrix while q_in still has
+    % the old row count.  Copy only the rows that exist; the new bottom
+    % row of q_out stays zero, which is correct because the new Arnoldi
+    % vector has zero projection onto the existing basis.
+    n_q_rows = size(q_in, 1);
+    q_out(1:n_q_rows, 1:n_prev) = q_in;
     r_out(1:n_prev, 1:n_prev) = r_in;
 
     for j = n_prev + 1:n_cols
