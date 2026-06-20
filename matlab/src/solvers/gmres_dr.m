@@ -419,54 +419,66 @@ function [x, flag, relresvec, kdvec, time] = ...
         end
 
         % ------------------------------------------------------------------
-        % Harmonic Ritz computation via real Schur decomposition.
+        % Harmonic Ritz computation -- hybrid eigs / Schur strategy.
         %
-        % The harmonic Ritz matrix is formed explicitly (Morgan 2002, eq. 4):
+        % G = R'*R  (from the incremental QR already computed this cycle)
+        % F = H_sq' (square part of the Hessenberg, transposed)
         %
-        %   Ht = H_sq + h_{m+1,m}^2 * (H_sq' \ e_m) * e_m'
+        % PRIMARY PATH -- eigs(F, G, k, 'LM'):
+        %   Identical to the GMRES-E approach.  Fast and accurate when G is
+        %   well-conditioned.  We sort the returned eigenvalues in ascending
+        %   |lambda| order and QR-orthonormalise the eigenvectors to form Pk.
+        %   real() is applied to strip conjugate-noise artefacts.
         %
-        % where H_sq = H(1:m, 1:m) is the square part of the Hessenberg
-        % and e_m is the m-th standard basis vector.  The eigenvalues of Ht
-        % are the harmonic Ritz values.
+        % FALLBACK PATH -- Schur decomposition of the harmonic matrix Ht:
+        %   Used when rcond(G) < 1e-14 (suggested by J.C. Cabral), i.e. when
+        %   G is too ill-conditioned for the generalized eigensolver.  We form
         %
-        % We compute the REAL Schur decomposition [X,T] = schur(Ht) and
-        % reorder it via ordschur to move the k Schur vectors with smallest
-        % |eigenvalue| to the front.  This avoids the generalized eigenvalue
-        % problem eigs(F, G) used in GMRES-E, which fails when G is singular.
-        % The real Schur form also handles complex conjugate pairs naturally
-        % (they appear as 2x2 blocks in T) without needing to force real().
+        %     Ht = H_sq + h_{m+1,m}^2 * (H_sq' \ e_m) * e_m'
+        %
+        %   and compute the real Schur decomposition.  ordschur reorders the
+        %   k Schur vectors with smallest |eigenvalue| to the front.  The
+        %   Schur form naturally handles complex conjugate pairs as 2x2 blocks
+        %   in T: if T(k+1,k) ~= 0 the cut falls inside such a block, so we
+        %   set keep = k+1 to avoid splitting the pair.
         % ------------------------------------------------------------------
-        h_sub = H(m + 1, m);   % subdiagonal entry of last Arnoldi step
-        emk = zeros(m, 1);
-        emk(m) = 1;
-        ht    = H(1:m, 1:m) + h_sub^2 * (H(1:m, 1:m)' \ emk) * emk';
+        g_mat = r_qr' * r_qr;           % G from the already-computed QR
+        f_mat = H(1:m, 1:m)';           % F = H_sq'
 
-        [s_vecs, s_vals] = schur(ht);   % Ht = s_vecs * s_vals * s_vecs'
-        ritz = ordeig(s_vals);          % eigenvalues of ht in Schur order
-
-        [~, ind] = sort(abs(ritz), 'ascend');
-        sel = false(m, 1);
-        sel(ind(1:k)) = true;
-        [s_vecs, s_vals] = ordschur(s_vecs, s_vals, sel);
-
-        % ------------------------------------------------------------------
-        % 2x2 block check: if T(k+1,k) ~= 0, the cut falls inside a 2x2
-        % diagonal block of the real Schur form, which represents a complex
-        % conjugate pair.  Including one eigenvalue of a conjugate pair but
-        % not the other would break the real-arithmetic invariant.  We set
-        % keep = k+1 to include the full block; it reverts to k at the next
-        % restart once the pair has been reordered safely.
-        % ------------------------------------------------------------------
-        if k > 0 && s_vals(k + 1, k) ~= 0
-            keep = k + 1;
-        else
+        if rcond(g_mat) > 1e-14
+            % --- eigs path (primary) ---
+            opts_eig.tol = tol;
+            opts_eig.v0  = ones(m, 1);
+            [ek_raw, dk] = eigs(f_mat, g_mat, k, 'LM', opts_eig);
+            [~, idx] = sort(abs(diag(dk)));
+            ek = real(ek_raw(:, idx));
+            [pk, ~] = qr(ek, 0);        % orthonormalise eigenvectors
             keep = k;
+        else
+            % --- Schur path (fallback when G is ill-conditioned) ---
+            h_sub = H(m + 1, m);
+            emk   = zeros(m, 1);
+            emk(m) = 1;
+            ht = f_mat' + h_sub^2 * (f_mat \ emk) * emk';
+            [s_vecs, s_vals] = schur(ht);
+            ritz = ordeig(s_vals);
+            [~, ind] = sort(abs(ritz), 'ascend');
+            sel = false(m, 1);
+            sel(ind(1:k)) = true;
+            [s_vecs, s_vals] = ordschur(s_vecs, s_vals, sel);
+            if k > 0 && s_vals(k + 1, k) ~= 0
+                keep = k + 1;
+            else
+                keep = k;
+            end
+            pk = s_vecs(:, 1:keep);
         end
 
         % ------------------------------------------------------------------
         % Thick restart: orthogonal basis rotation.
         %
-        % Let Pk = s_vecs(:, 1:keep) (the selected Schur vectors, m-by-keep).
+        % pk (m-by-keep) is set above: either the QR-orthonormalised eigs
+        % eigenvectors (primary path) or the ordered Schur vectors (fallback).
         % We construct the new (m+1)-by-(keep+1) basis Pkp1 by:
         %   1. Extending Pk with a zero bottom row: [(m-by-keep); (1-by-keep)]
         %   2. Appending rc (the current Arnoldi-space residual vector):
@@ -486,7 +498,6 @@ function [x, flag, relresvec, kdvec, time] = ...
         % The V update overwrites only columns 1:keep+1; columns keep+2:m+1
         % are filled by the Arnoldi extension in the next cycle.
         % ------------------------------------------------------------------
-        pk   = s_vecs(:, 1:keep);
         pkp1 = [pk; zeros(1, keep)];     % extend Pk with a zero bottom row
         pkp1 = [pkp1, rc];               % append residual direction
         [pkp1, ~] = qr(pkp1, 0);         % orthonormalize
