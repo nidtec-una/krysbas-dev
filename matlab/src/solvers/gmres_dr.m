@@ -121,6 +121,12 @@ function [x, flag, relresvec, kdvec, time] = ...
     %   large symmetric eigenvalue problems. SIAM Journal on Matrix
     %   Analysis and Applications, 22(2), 602-616.
     %
+    %   [3] GMRES-SDR reference implementation by the NLA Group, University
+    %   of Manchester.  The Schur-based thick restart and incremental QR
+    %   update adopted in this file are adapted from the gmres_dr.m and
+    %   qrupdate_gs.m files in that repository.
+    %   https://github.com/nla-group/GMRES-SDR
+    %
     %
     %   Copyright:
     %   ----------

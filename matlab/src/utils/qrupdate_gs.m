@@ -39,6 +39,13 @@ function [q_out, r_out] = qrupdate_gs(a, q_in, r_in)
     %
     %   r_out:  n-by-n upper triangular matrix.
     %
+    %   References:
+    %   -----------
+    %
+    %   Adapted from qrupdate_gs.m in the GMRES-SDR reference implementation
+    %   by the NLA Group, University of Manchester.
+    %   https://github.com/nla-group/GMRES-SDR
+    %
     %   Copyright:
     %   ----------
     %
