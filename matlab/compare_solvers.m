@@ -59,6 +59,8 @@
 % directory.
 % =========================================================================
 
+clear;
+clc;
 script_dir = fileparts(mfilename('fullpath'));
 addpath(genpath(fullfile(script_dir, 'src')));
 data_dir = fullfile(script_dir, '..', 'data');
@@ -73,12 +75,12 @@ data_dir = fullfile(script_dir, '..', 'data');
 
 % Test matrices to compare (must exist as <name>.mat inside data/).
 % Each .mat file must contain a struct 'Problem' with fields A and b.
-matrices = {'sherman4'};
+matrices = {'sherman5'};
 
 % Shared restart dimension and convergence tolerance
-m    = 27;   % Krylov subspace dimension (restart parameter)
+m    = 50;   % Krylov subspace dimension (restart parameter)
 tol  = 1e-9; % relative residual tolerance
-maxit = 500; % maximum number of restart cycles
+maxit = 600; % maximum number of restart cycles
 
 % GMRES-E: number of harmonic Ritz vectors to append (augmented dimension)
 d_gmrese = 3;
@@ -136,7 +138,11 @@ for mi = 1:length(matrices)
 
     load(mat_path, 'Problem');
     A = Problem.A;
-    b = Problem.b;
+    if isfield(Problem, 'b')
+        b = Problem.b;
+    else
+        b = ones(size(A, 1), 1);
+    end
     n = size(A, 1);
 
     fprintf('\n--- %s  (n = %d, nnz = %d) ---\n', mat_name, n, nnz(A));
@@ -176,8 +182,9 @@ for mi = 1:length(matrices)
             flag_p, numel(rrv_p) - 1, t_p);
 
     % GMRES-DR(m, k)
-    [~, flag_dr, rrv_dr, ~, t_dr] = gmres_dr(A, b, m, k_gmresdr, ...
-                                             tol, maxit);
+    m_dr = m + k_gmresdr + d_gmrese;
+    [~, flag_dr, rrv_dr, ~, t_dr, stats_dr] = gmres_dr(A, b, m_dr, ...
+                                                       k_gmresdr, tol, maxit);
     fprintf('  GMRES-DR  : flag=%d  cycles=%3d  time=%.3fs\n', ...
             flag_dr, numel(rrv_dr) - 1, t_dr);
 
