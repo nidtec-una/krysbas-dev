@@ -445,22 +445,49 @@ function [x, flag, relresvec, kdvec, time] = ...
     for cycle = 2:maxit
 
         % ------------------------------------------------------------------
-        % Step 1: QR-orthonormalize the k Ritz vectors.
+        % Step 1: QR-orthonormalize the Ritz vectors and detect rank.
         %
-        % Vk (n-by-k, orthonormal columns) will serve as the first k basis
-        % vectors of this cycle's subspace.  Rk_qr (k-by-k upper triangular)
-        % satisfies  Yk = Vk * Rk_qr.  Consequently the Arnoldi-space
-        % representation of Vk in terms of the PREVIOUS Arnoldi basis Vprev is:
+        % Vk (n-by-k, orthonormal) and Rk_qr (k-by-k upper triangular)
+        % satisfy  Yk = Vk * Rk_qr.
         %
-        %   Vk = Vprev(:,1:s) * Ek_norm
+        % ROOT-CAUSE OF NUMERICAL FAILURE:
+        % After enough restart cycles the harmonic Ritz values converge
+        % toward true eigenvalues.  When two Ritz values are nearly equal
+        % (clustered eigenvalues) their Ritz vectors become almost parallel.
+        % The j-th diagonal of Rk_qr, which equals the norm of the j-th
+        % column of Yk after removing the contribution of columns 1,...,j-1,
+        % then drops toward zero.  Computing  Ek_norm = Ek / Rk_qr  with a
+        % near-zero diagonal is equivalent to dividing by zero: Ek_norm
+        % gets huge entries, T = Hprev*Ek_norm blows up, H_def becomes
+        % ill-conditioned, and the backslash solve or the subsequent eigs
+        % call fails.
         %
-        % where  Ek_norm = Ek / Rk_qr  (s-by-k).
+        % FIX (rank-revealing truncation):
+        % Compute k_eff = the number of diagonals of Rk_qr that exceed a
+        % threshold relative to the largest diagonal.  Retain only those
+        % k_eff columns; the remaining k - k_eff vectors are numerically
+        % dependent on the accepted ones and are silently dropped for this
+        % cycle.  The Arnoldi extension then runs for m - k_eff steps
+        % (instead of m - k), so the total subspace dimension stays at m.
+        % k_eff is strictly local to this cycle; the next cycle recomputes
+        % fresh Ritz vectors and re-evaluates k_eff independently.
         % ------------------------------------------------------------------
         [Vk, Rk_qr] = qr(Yk, 0);  % thin QR: Vk is n-by-k, Rk_qr is k-by-k
 
-        % Coefficient matrix relating Vk to the previous Arnoldi basis
-        % (used below to form H's first k columns without new matvecs)
-        Ek_norm = Ek / Rk_qr;  % s-by-k
+        % Rank-revealing threshold on the diagonals of Rk_qr.
+        % sqrt(eps) ~ 1e-8 is a standard choice: it accepts a vector whose
+        % independent component is at least sqrt(eps) times the strongest
+        % Ritz vector.  Tighten to eps^(2/3) for stricter purification.
+        diag_R = abs(diag(Rk_qr));
+        k_eff = sum(diag_R > max(diag_R) * sqrt(eps));
+
+        % Truncate Vk and Rk_qr to the k_eff independent columns.
+        Vk    = Vk(:, 1:k_eff);
+        Rk_qr = Rk_qr(1:k_eff, 1:k_eff);
+
+        % Arnoldi-space coefficient matrix (well-conditioned after truncation):
+        %   Vk = Vprev(:,1:s) * Ek_norm,  Ek_norm = Ek(:,1:k_eff) / Rk_qr
+        Ek_norm = Ek(:, 1:k_eff) / Rk_qr;  % s-by-k_eff
 
         % ------------------------------------------------------------------
         % Step 2: Compute the current residual and deflate it.
@@ -476,10 +503,10 @@ function [x, flag, relresvec, kdvec, time] = ...
         % ------------------------------------------------------------------
         rc = b - A * x;
 
-        % Modified Gram-Schmidt projection
+        % Modified Gram-Schmidt projection (against k_eff accepted vectors)
         r_tilde = rc;
-        hgs = zeros(k, 1);  % Gram-Schmidt coefficients (= phi(1:k))
-        for i = 1:k
+        hgs = zeros(k_eff, 1);  % Gram-Schmidt coefficients (= phi(1:k_eff))
+        for i = 1:k_eff
             hgs(i) = Vk(:, i)' * r_tilde;
             r_tilde = r_tilde - hgs(i) * Vk(:, i);
         end
@@ -492,7 +519,7 @@ function [x, flag, relresvec, kdvec, time] = ...
             % The current x is the best approximation we can achieve with
             % the deflation subspace alone; report relative residual and exit.
             relresvec(nCycles + 2) = norm(rc) / res0;
-            kdvec(nCycles + 2) = k;
+            kdvec(nCycles + 2) = k_eff;
             nCycles = nCycles + 1;
             flag = (relresvec(nCycles + 1) < tol);
             relresvec = relresvec(1:nCycles + 1);
@@ -540,12 +567,12 @@ function [x, flag, relresvec, kdvec, time] = ...
         %   => H(k+1, j) = g_tilde' * T(:, j) / norm_r_tilde
         % ------------------------------------------------------------------
 
-        % T = Hprev * Ek_norm  ((s+1)-by-k)
+        % T = Hprev * Ek_norm  ((s+1)-by-k_eff)
         T = Hprev * Ek_norm;
 
-        % Top k-by-k block: H(1:k, 1:k)
+        % Top k_eff-by-k_eff block: H(1:k_eff, 1:k_eff)
         H_def = zeros(m + 1, m);  % full Hessenberg for this cycle
-        H_def(1:k, 1:k) = Ek_norm' * T(1:s, :);
+        H_def(1:k_eff, 1:k_eff) = Ek_norm' * T(1:s, :);
 
         % Arnoldi-space deflated residual (s+1-vector):
         %   g_tilde(1:s)   = (I - Ek_norm*Ek_norm') * g_res(1:s)
@@ -553,8 +580,8 @@ function [x, flag, relresvec, kdvec, time] = ...
         g_tilde = g_res;
         g_tilde(1:s) = g_res(1:s) - Ek_norm * (Ek_norm' * g_res(1:s));
 
-        % Row k+1 of H's first k columns
-        H_def(k + 1, 1:k) = (g_tilde' * T) / norm_r_tilde;
+        % Row k_eff+1 of H's first k_eff columns
+        H_def(k_eff + 1, 1:k_eff) = (g_tilde' * T) / norm_r_tilde;
 
         % ------------------------------------------------------------------
         % Step 4: Assemble the full Arnoldi basis for this cycle.
@@ -565,8 +592,8 @@ function [x, flag, relresvec, kdvec, time] = ...
         %   V_cycle(:, k+2:m+1) = filled by Arnoldi extension below
         % ------------------------------------------------------------------
         V_cycle = zeros(n, m + 1);
-        V_cycle(:, 1:k) = Vk;
-        V_cycle(:, k + 1) = v_kp1;
+        V_cycle(:, 1:k_eff) = Vk;
+        V_cycle(:, k_eff + 1) = v_kp1;
 
         % ------------------------------------------------------------------
         % Step 5: Arnoldi extension from v_{k+1} for m - k additional steps.
@@ -580,7 +607,7 @@ function [x, flag, relresvec, kdvec, time] = ...
         % This fills H_def(:, k+1:m) and V_cycle(:, k+2:m+1).
         % ------------------------------------------------------------------
         s_new = m;  % will be updated on happy breakdown
-        for j = k + 1:m
+        for j = k_eff + 1:m
             w = A * V_cycle(:, j);
             for i = 1:j
                 H_def(i, j) = w' * V_cycle(:, i);
@@ -615,8 +642,8 @@ function [x, flag, relresvec, kdvec, time] = ...
         % RHS phi is not of the beta*e1 form required by plane_rotations.
         % ------------------------------------------------------------------
         phi = zeros(s_new + 1, 1);
-        phi(1:k) = hgs;
-        phi(k + 1) = norm_r_tilde;
+        phi(1:k_eff) = hgs;
+        phi(k_eff + 1) = norm_r_tilde;
 
         y = H_def(1:s_new + 1, 1:s_new) \ phi;
 
