@@ -472,22 +472,31 @@ function [x, flag, relresvec, kdvec, time] = ...
         % k_eff is strictly local to this cycle; the next cycle recomputes
         % fresh Ritz vectors and re-evaluates k_eff independently.
         % ------------------------------------------------------------------
-        [Vk, Rk_qr] = qr(Yk, 0);  % thin QR: Vk is n-by-k, Rk_qr is k-by-k
+        % Column-pivoting thin QR: Yk * Pmat = Vk * Rk_qr, where Pmat is a
+        % k-by-k permutation matrix.  Column pivoting is ESSENTIAL here:
+        % it guarantees that the diagonal entries of Rk_qr are in strictly
+        % decreasing order of magnitude, so the leading k_eff-by-k_eff
+        % sub-block is always the best-conditioned subset.  Without pivoting
+        % a near-zero diagonal can appear anywhere in Rk_qr, causing
+        % Rk_qr(1:k_eff,1:k_eff) to remain singular even after truncation.
+        [Vk, Rk_qr, Pmat] = qr(Yk, 0);
 
-        % Rank-revealing threshold on the diagonals of Rk_qr.
-        % sqrt(eps) ~ 1e-8 is a standard choice: it accepts a vector whose
-        % independent component is at least sqrt(eps) times the strongest
-        % Ritz vector.  Tighten to eps^(2/3) for stricter purification.
+        % Rank-revealing threshold on the (now sorted) diagonals of Rk_qr.
+        % sqrt(eps) ~ 1e-8: keeps vectors whose independent component is at
+        % least sqrt(eps) times the strongest Ritz vector direction.
         diag_R = abs(diag(Rk_qr));
-        k_eff = sum(diag_R > max(diag_R) * sqrt(eps));
+        k_eff  = sum(diag_R > diag_R(1) * sqrt(eps));
 
-        % Truncate Vk and Rk_qr to the k_eff independent columns.
+        % Truncate to the k_eff independent columns.
         Vk    = Vk(:, 1:k_eff);
-        Rk_qr = Rk_qr(1:k_eff, 1:k_eff);
+        Rk_qr = Rk_qr(1:k_eff, 1:k_eff);   % well-conditioned by pivoting
 
-        % Arnoldi-space coefficient matrix (well-conditioned after truncation):
-        %   Vk = Vprev(:,1:s) * Ek_norm,  Ek_norm = Ek(:,1:k_eff) / Rk_qr
-        Ek_norm = Ek(:, 1:k_eff) / Rk_qr;  % s-by-k_eff
+        % Arnoldi-space coefficient matrix:
+        %   Vk = Vprev(:,1:s) * Ek_norm
+        % With column pivoting, Yk * Pmat = Vk_full * Rk_qr_full, so:
+        %   Ek_norm = Ek * Pmat(:,1:k_eff) / Rk_qr(1:k_eff,1:k_eff)
+        % Rk_qr is now guaranteed well-conditioned (all diagonals >= threshold).
+        Ek_norm = Ek * Pmat(:, 1:k_eff) / Rk_qr;  % s-by-k_eff
 
         % ------------------------------------------------------------------
         % Step 2: Compute the current residual and deflate it.
