@@ -1,4 +1,4 @@
-function [x, flag, relresvec, kdvec, time] = ...
+function [x, flag, relresvec, kdvec, time, stats] = ...
     gmres_dr(A, b, m, k, tol, maxit, xInitial, varargin)
     % GMRES-DR algorithm
     %
@@ -110,6 +110,14 @@ function [x, flag, relresvec, kdvec, time] = ...
     %   time:       float
     %               Wall-clock time in seconds.
     %
+    %   stats:      struct (optional, only populated when requested)
+    %               Diagnostic counters for the harmonic Ritz path chosen
+    %               at each restart cycle:
+    %                 stats.n_eigs  : number of cycles that used eigs
+    %                                 (well-conditioned G, rcond > 1e-14)
+    %                 stats.n_schur : number of cycles that used the Schur
+    %                                 fallback (ill-conditioned G)
+    %
     %
     %   References:
     %   -----------
@@ -210,6 +218,7 @@ function [x, flag, relresvec, kdvec, time] = ...
         flag = (gmres_flag == 0);
         relresvec = resvec ./ resvec(1);
         kdvec = m .* ones(length(relresvec), 1);
+        stats = struct('n_eigs', 0, 'n_schur', 0);
         return
     end
 
@@ -233,6 +242,7 @@ function [x, flag, relresvec, kdvec, time] = ...
         flag = (gmres_flag == 0);
         relresvec = resvec ./ resvec(1);
         kdvec = m .* ones(length(relresvec), 1);
+        stats = struct('n_eigs', 0, 'n_schur', 0);
         return
     end
 
@@ -297,7 +307,9 @@ function [x, flag, relresvec, kdvec, time] = ...
     relresvec = zeros(maxit + 1, 1);
     relresvec(1) = 1.0;
     kdvec   = zeros(maxit + 1, 1);
-    n_cycles = 0;
+    n_cycles       = 0;
+    n_eigs_cycles  = 0;   % cycles that used the eigs primary path
+    n_schur_cycles = 0;   % cycles that used the Schur fallback
 
     % ------------------------------------------------------------------
     % Arnoldi basis V: pre-allocated for m + 1 columns.  After each
@@ -397,6 +409,8 @@ function [x, flag, relresvec, kdvec, time] = ...
                 flag = 1;
                 relresvec = relresvec(1:n_cycles + 1);
                 kdvec     = kdvec(1:n_cycles + 1);
+                stats = struct('n_eigs', n_eigs_cycles, ...
+                               'n_schur', n_schur_cycles);
                 time = toc();
                 return
             end
@@ -414,6 +428,8 @@ function [x, flag, relresvec, kdvec, time] = ...
             flag = 1;
             relresvec = relresvec(1:n_cycles + 1);
             kdvec     = kdvec(1:n_cycles + 1);
+            stats = struct('n_eigs', n_eigs_cycles, ...
+                           'n_schur', n_schur_cycles);
             time = toc();
             return
         end
@@ -447,6 +463,7 @@ function [x, flag, relresvec, kdvec, time] = ...
 
         if rcond(g_mat) > 1e-14
             % --- eigs path (primary) ---
+            n_eigs_cycles = n_eigs_cycles + 1;
             opts_eig.tol = tol;
             opts_eig.v0  = ones(m, 1);
             [ek_raw, dk] = eigs(f_mat, g_mat, k, 'LM', opts_eig);
@@ -456,6 +473,7 @@ function [x, flag, relresvec, kdvec, time] = ...
             keep = k;
         else
             % --- Schur path (fallback when G is ill-conditioned) ---
+            n_schur_cycles = n_schur_cycles + 1;
             h_sub = H(m + 1, m);
             emk   = zeros(m, 1);
             emk(m) = 1;
@@ -515,6 +533,7 @@ function [x, flag, relresvec, kdvec, time] = ...
 
     relresvec = relresvec(1:n_cycles + 1);
     kdvec     = kdvec(1:n_cycles + 1);
+    stats = struct('n_eigs', n_eigs_cycles, 'n_schur', n_schur_cycles);
     time = toc();
 
 end
