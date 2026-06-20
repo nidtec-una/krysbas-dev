@@ -481,6 +481,15 @@ function [x, flag, relresvec, kdvec, time] = ...
         % Rk_qr(1:k_eff,1:k_eff) to remain singular even after truncation.
         [Vk, Rk_qr, Pmat] = qr(Yk, 0);
 
+        % Octave returns P as a permutation VECTOR with the 0 flag; MATLAB
+        % may return it as a permutation MATRIX.  Normalize to a vector so
+        % that column indexing Ek(:, perm(1:k_eff)) works in both cases.
+        if isvector(Pmat)
+            perm = Pmat(:)';   % ensure row vector  [p1, p2, ..., pk]
+        else
+            [~, perm] = max(Pmat);  % permutation matrix -> row vector
+        end
+
         % Rank-revealing threshold on the (now sorted) diagonals of Rk_qr.
         % sqrt(eps) ~ 1e-8: keeps vectors whose independent component is at
         % least sqrt(eps) times the strongest Ritz vector direction.
@@ -491,12 +500,11 @@ function [x, flag, relresvec, kdvec, time] = ...
         Vk    = Vk(:, 1:k_eff);
         Rk_qr = Rk_qr(1:k_eff, 1:k_eff);   % well-conditioned by pivoting
 
-        % Arnoldi-space coefficient matrix:
-        %   Vk = Vprev(:,1:s) * Ek_norm
-        % With column pivoting, Yk * Pmat = Vk_full * Rk_qr_full, so:
-        %   Ek_norm = Ek * Pmat(:,1:k_eff) / Rk_qr(1:k_eff,1:k_eff)
-        % Rk_qr is now guaranteed well-conditioned (all diagonals >= threshold).
-        Ek_norm = Ek * Pmat(:, 1:k_eff) / Rk_qr;  % s-by-k_eff
+        % Arnoldi-space coefficient matrix via column indexing (avoids the
+        % matrix-vs-vector ambiguity of Pmat):
+        %   Ek_norm = Ek(:, perm(1:k_eff)) / Rk_qr
+        % Rk_qr is guaranteed well-conditioned (all diagonals >= threshold).
+        Ek_norm = Ek(:, perm(1:k_eff)) / Rk_qr;  % s-by-k_eff
 
         % ------------------------------------------------------------------
         % Step 2: Compute the current residual and deflate it.
