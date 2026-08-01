@@ -373,10 +373,6 @@ function [x, flag, relresvec, kdvec, time, stats] = ...
         %      relation gives ||b - A*(x+V*d)|| = ||V_ext * rc|| = ||rc||.
         %   6. Exits early if convergence is detected.
         % ------------------------------------------------------------------
-        d  = zeros(m, 1);   % least-squares solution (updated each step)
-        rc = vr;            % Arnoldi-space residual (updated each step)
-        res = norm(vr);     % current residual norm estimate
-
         for j = keep + 1:m
             w = A * V(:, j);
 
@@ -417,8 +413,19 @@ function [x, flag, relresvec, kdvec, time, stats] = ...
         end
 
         % ------------------------------------------------------------------
-        % End of Arnoldi loop: update the solution and record history.
+        % End of Arnoldi loop: finalise this cycle's solution and residual
+        % from the completed QR factorisation.  This is needed even when
+        % the loop above did not execute at all (keep == m: the harmonic
+        % Ritz selection consumed the entire per-cycle budget, leaving no
+        % room for a fresh Arnoldi step), in which case d/rc/res must be
+        % solved directly from the carried-over factorisation rather than
+        % from stale pre-loop placeholders.
         % ------------------------------------------------------------------
+        vr_c = [vr; zeros(m + 1 - length(vr), 1)];
+        d   = r_qr \ (q_qr' * vr_c);
+        rc  = vr_c - H(1:m + 1, 1:m) * d;
+        res = norm(rc);
+
         x = x + V(:, 1:m) * d;
         n_cycles = n_cycles + 1;
         relresvec(n_cycles + 1) = res / beta;
@@ -444,11 +451,17 @@ function [x, flag, relresvec, kdvec, time, stats] = ...
         %   Identical to the GMRES-E approach.  Fast and accurate when G is
         %   well-conditioned.  We sort the returned eigenvalues in ascending
         %   |lambda| order and QR-orthonormalise the eigenvectors to form Pk.
-        %   real() is applied to strip conjugate-noise artefacts.
+        %   If the selected eigenvector is complex (i.e. the requested k
+        %   splits a complex-conjugate harmonic Ritz pair), we do NOT take
+        %   real() and silently keep half of it -- that corrupts the thick
+        %   restart's Arnoldi-consistency invariant.  Instead we fall back
+        %   to the Schur path, which already handles this case correctly.
         %
         % FALLBACK PATH -- Schur decomposition of the harmonic matrix Ht:
         %   Used when rcond(G) < 1e-14 (suggested by J.C. Cabral), i.e. when
-        %   G is too ill-conditioned for the generalized eigensolver.  We form
+        %   G is too ill-conditioned for the generalized eigensolver, OR
+        %   when the eigs path hit a complex-conjugate pair (see above).
+        %   We form
         %
         %     Ht = H_sq + h_{m+1,m}^2 * (H_sq' \ e_m) * e_m'
         %
@@ -461,18 +474,24 @@ function [x, flag, relresvec, kdvec, time, stats] = ...
         g_mat = r_qr' * r_qr;           % G from the already-computed QR
         f_mat = H(1:m, 1:m)';           % F = H_sq'
 
+        use_eigs = false;
         if rcond(g_mat) > 1e-14
-            % --- eigs path (primary) ---
-            n_eigs_cycles = n_eigs_cycles + 1;
             opts_eig.tol = tol;
             opts_eig.v0  = ones(m, 1);
             [ek_raw, dk] = eigs(f_mat, g_mat, k, 'LM', opts_eig);
             [~, idx] = sort(abs(diag(dk)));
-            ek = real(ek_raw(:, idx));
-            [pk, ~] = qr(ek, 0);        % orthonormalise eigenvectors
+            ek_sorted = ek_raw(:, idx);
+            use_eigs = isreal(ek_sorted);
+        end
+
+        if use_eigs
+            % --- eigs path (primary) ---
+            n_eigs_cycles = n_eigs_cycles + 1;
+            [pk, ~] = qr(ek_sorted, 0);   % orthonormalise eigenvectors
             keep = k;
         else
-            % --- Schur path (fallback when G is ill-conditioned) ---
+            % --- Schur path (fallback: ill-conditioned G, or a complex
+            %     harmonic Ritz pair at the eigs path) ---
             n_schur_cycles = n_schur_cycles + 1;
             h_sub = H(m + 1, m);
             emk   = zeros(m, 1);

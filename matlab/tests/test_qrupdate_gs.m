@@ -123,10 +123,16 @@ function test_row_growth_between_calls()
     % Concretely we check that A(1:j+1, 1:j) = Q * R at each step j,
     % using a fixed (tall) matrix A whose leading submatrices are passed
     % one column at a time.
+    %
+    % A must be upper Hessenberg (A(i,j) = 0 for i > j+1), matching the
+    % actual gmres_dr use case: qrupdate_gs extends the existing basis
+    % assuming the new bottom row is zero for previously-seen columns,
+    % which only holds for Hessenberg-structured input, not a fully
+    % dense matrix.
 
     rng(4);
     m = 8;  % maximum number of columns
-    A = randn(m + 1, m);  % (m+1)-by-m tall matrix
+    A = triu(randn(m + 1, m), -1);  % (m+1)-by-m upper Hessenberg matrix
 
     q_inc = [];
     r_inc = [];
@@ -153,7 +159,7 @@ function test_row_growth_residual_estimate()
 
     rng(5);
     m = 6;
-    H = randn(m + 1, m);  % simulated Hessenberg
+    H = triu(randn(m + 1, m), -1);  % simulated Hessenberg
     c = randn(m + 1, 1);  % simulated RHS (Vr in GMRES-DR)
 
     % Incremental QR
