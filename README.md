@@ -91,6 +91,15 @@ x, flag, relresvec, kdvec, time = pd_gmres(A, b; m_initial=10, m_min_max=nothing
                                              tol=1e-6, maxit=10, x_initial=zeros(n), alpha_pd=[-3.0, 5.0])
 ```
 
+### GMRES-DR(*m, k*) — [Morgan, 2002](https://epubs.siam.org/doi/10.1137/S1064827599364659)
+
+Restarted GMRES with deflated (thick) restarting: *k* harmonic Ritz vectors are recycled across restart cycles, keeping the subspace dimension fixed at *m* per cycle instead of augmenting it. Currently MATLAB only.
+
+**MATLAB**
+```matlab
+[x, flag, relresvec, kdvec, time, stats] = gmres_dr(A, b, m, k, tol, maxit, xInitial)
+```
+
 ## Contributing
 
 If you wish to contribute to KrySBAS, please read the [developer guide](https://github.com/nidtec-una/krysbas-dev/blob/dev_guide/dev_guide.md) before opening a pull request.
