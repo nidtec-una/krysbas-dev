@@ -17,3 +17,9 @@ lgmres
 ```@docs
 pd_gmres
 ```
+
+## GMRES-DR
+
+```@docs
+gmres_dr
+```

@@ -93,11 +93,16 @@ x, flag, relresvec, kdvec, time = pd_gmres(A, b; m_initial=10, m_min_max=nothing
 
 ### GMRES-DR(*m, k*) — [Morgan, 2002](https://epubs.siam.org/doi/10.1137/S1064827599364659)
 
-Restarted GMRES with deflated (thick) restarting: *k* harmonic Ritz vectors are recycled across restart cycles, keeping the subspace dimension fixed at *m* per cycle instead of augmenting it. Currently MATLAB only.
+Restarted GMRES with deflated (thick) restarting: *k* harmonic Ritz vectors are recycled across restart cycles, keeping the subspace dimension fixed at *m* per cycle instead of augmenting it.
 
 **MATLAB**
 ```matlab
 [x, flag, relresvec, kdvec, time, stats] = gmres_dr(A, b, m, k, tol, maxit, xInitial)
+```
+
+**Julia**
+```julia
+x, flag, relresvec, kdvec, time = gmres_dr(A, b; m=10, k=3, tol=1e-6, maxit=10, x_initial=zeros(n))
 ```
 
 ## Contributing
