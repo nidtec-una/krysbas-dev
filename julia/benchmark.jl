@@ -26,7 +26,7 @@ const SOLVERS = [
 
 function load_mat(name)
     f = matopen(joinpath(DATA_DIR, "$name.mat"))
-    P = read(f, "Problem");
+    P = read(f, "Problem")
     close(f)
     return P["A"], vec(P["b"])
 end
@@ -36,7 +36,7 @@ function bench_solver(fn, A, b)
     try
         fn(A, b)
     catch
-        ;
+
         return nothing
     end   # warmup: triggers JIT compilation
     best = Inf

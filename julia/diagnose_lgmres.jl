@@ -27,7 +27,7 @@ function run_octave_diag(mat_name)
     raw = try
         read(cmd, String)
     catch
-        ;
+
         return nothing
     end
     rm(script; force = true)
@@ -46,9 +46,9 @@ function compare(mat_name)
     println("="^70)
 
     f = matopen(joinpath(DATA, "$mat_name.mat"))
-    P = read(f, "Problem");
+    P = read(f, "Problem")
     close(f)
-    A = P["A"];
+    A = P["A"]
     b = vec(P["b"])
 
     _, _, jl_rrv, _, _ = lgmres(A, b; m = M, l = L, tol = TOL, maxit = MAXIT)

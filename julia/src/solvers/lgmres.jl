@@ -162,10 +162,10 @@ function lgmres(
             c1[j] = H1[j, j] / denom
             sv1[j] = H1[j+1, j] / denom
         else
-            c1[j] = one(T);
+            c1[j] = one(T)
             sv1[j] = zero(T)
         end
-        H1[j, j] = denom;
+        H1[j, j] = denom
         H1[j+1, j] = zero(T)
         gv1[j+1] = -sv1[j] * gv1[j]
         gv1[j] = c1[j] * gv1[j]
