@@ -39,8 +39,8 @@ v1 = randn(n);
 v1 ./= norm(v1)
 appendV = randn(n, k)
 for col in eachcol(appendV)
-    ;
-    col ./= norm(col);
+
+    col ./= norm(col)
 end
 
 # warmup
