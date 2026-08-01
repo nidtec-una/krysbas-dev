@@ -1,6 +1,6 @@
-function test_suite = test_slgmres_e %#ok<*STOUT>
+function test_suite = test_a_slgmres_e %#ok<*STOUT>
     %
-    %   Test suite for the SLGMRES-E solver.
+    %   Test suite for the A-SLGMRES-E solver.
     %
     %   Modified from:
     %   https://github.com/Remi-Gau/template_matlab_analysis
@@ -43,14 +43,14 @@ function test_number_of_input_arguments()
     % Verify that errors are raised for too few or too many input arguments.
 
     try
-        slgmres_e(ones(2, 2));
+        a_slgmres_e(ones(2, 2));
     catch ME
         msg = "Too few input parameters. Expected at least A and b.";
         assert(matches(ME.message, msg));
     end
 
     try
-        slgmres_e([], [], [], [], [], [], [], [], [], [], []);
+        a_slgmres_e([], [], [], [], [], [], [], [], [], [], [], [], [], []);
     catch ME
         msg = "Too many input parameters.";
         assert(matches(ME.message, msg));
@@ -59,7 +59,7 @@ end
 
 function test_empty_matrix_A()
     try
-        slgmres_e([], ones(2, 1));
+        a_slgmres_e([], ones(2, 1));
     catch ME
         msg = "Matrix A cannot be empty.";
         assert(matches(ME.message, msg));
@@ -68,7 +68,7 @@ end
 
 function test_non_square_matrix_A()
     try
-        slgmres_e([1; 1], [1; 1]);
+        a_slgmres_e([1; 1], [1; 1]);
     catch ME
         msg = "Matrix A must be square.";
         assert(matches(ME.message, msg));
@@ -77,7 +77,7 @@ end
 
 function test_empty_vector_b()
     try
-        slgmres_e(eye(2), []);
+        a_slgmres_e(eye(2), []);
     catch ME
         msg = "Vector b cannot be empty.";
         assert(matches(ME.message, msg));
@@ -86,7 +86,7 @@ end
 
 function test_vector_b_not_column_vector()
     try
-        slgmres_e(ones(2), [1, 1]);
+        a_slgmres_e(ones(2), [1, 1]);
     catch ME
         msg = "Vector b must be a column vector.";
         assert(matches(ME.message, msg));
@@ -95,25 +95,52 @@ end
 
 function test_size_compatibility_between_A_and_b()
     try
-        slgmres_e(ones(3), [1; 1]);
+        a_slgmres_e(ones(3), [1; 1]);
     catch ME
         msg = "Dimension mismatch between matrix A and vector b.";
         assert(matches(ME.message, msg));
     end
 end
 
-function test_m_greater_than_size_of_A()
+function test_mInitial_out_of_range_raises_error()
     try
-        slgmres_e(eye(3), ones(3, 1), 4);
+        a_slgmres_e(eye(3), ones(3, 1), 4);
     catch ME
-        msg = "m must satisfy: 1 <= m <= n.";
+        msg = "mInitial must satisfy: 1 <= mInitial <= n.";
+        assert(matches(ME.message, msg));
+    end
+end
+
+function test_mMinMax_invalid_range_raises_error()
+    try
+        a_slgmres_e(eye(3), ones(3, 1), 2, [2; 1]);
+    catch ME
+        msg = "mMinMax must satisfy: 1 <= mMinMax(1) < mMinMax(2) <= n.";
+        assert(matches(ME.message, msg));
+    end
+end
+
+function test_mMinMax_excludes_mInitial_raises_error()
+    try
+        a_slgmres_e(eye(3), ones(3, 1), 2, [1; 1.5]);
+    catch ME
+        msg = "mMinMax must satisfy: mMinMax(1) <= mInitial <= mMinMax(2).";
+        assert(matches(ME.message, msg));
+    end
+end
+
+function test_mStep_out_of_range_raises_error()
+    try
+        a_slgmres_e(eye(3), ones(3, 1), 2, [], 0);
+    catch ME
+        msg = "mStep must satisfy: 0 < mStep < n.";
         assert(matches(ME.message, msg));
     end
 end
 
 function test_l_not_positive_raises_error()
     try
-        slgmres_e(eye(3), ones(3, 1), 2, 0);
+        a_slgmres_e(eye(3), ones(3, 1), 2, [], [], 0);
     catch ME
         msg = "l must satisfy: l > 0.";
         assert(matches(ME.message, msg));
@@ -122,28 +149,29 @@ end
 
 function test_d_not_positive_raises_error()
     try
-        slgmres_e(eye(3), ones(3, 1), 2, 1, 0);
+        a_slgmres_e(eye(3), ones(3, 1), 2, [], [], 1, 0);
     catch ME
         msg = "d must satisfy: d > 0.";
         assert(matches(ME.message, msg));
     end
 end
 
-function test_epsilon0_out_of_range_raises_error()
+function test_epsilonThreshold_out_of_range_raises_error()
     try
-        slgmres_e(eye(3), ones(3, 1), 2, 1, 1, 1.5);
+        a_slgmres_e(eye(3), ones(3, 1), 2, [], [], 1, 1, 1.5);
     catch ME
-        msg = "epsilon0 must satisfy: 0 < epsilon0 < 1.";
+        msg = "epsilonThreshold must satisfy: 0 < epsilonThreshold < 1.";
         assert(matches(ME.message, msg));
     end
 end
 
 function test_vector_xInitial_not_column_vector()
-    % m is deliberately non-empty and != n here: leaving it to default to
-    % min(n, 10) = n = 3 would trigger the m == n dispatch before this
-    % check is ever reached.
+    % mInitial is deliberately non-empty and != n here: leaving it to
+    % default to min(n, 10) = n = 3 would trigger the mInitial == n
+    % dispatch before this check is ever reached.
+    x0 = ones(1, 3);
     try
-        slgmres_e(eye(3), ones(3, 1), 2, [], [], [], [], [], ones(1, 3));
+        a_slgmres_e(eye(3), ones(3, 1), 2, [], [], [], [], [], [], [], [], x0);
     catch ME
         msg = "Initial guess xInitial is not a column vector.";
         assert(matches(ME.message, msg));
@@ -151,10 +179,11 @@ function test_vector_xInitial_not_column_vector()
 end
 
 function test_size_compatibility_between_A_and_xInitial()
-    % See test_vector_xInitial_not_column_vector for why m must be
+    % See test_vector_xInitial_not_column_vector for why mInitial must be
     % explicit and != n here.
+    x0 = ones(2, 1);
     try
-        slgmres_e(eye(3), ones(3, 1), 2, [], [], [], [], [], ones(2, 1));
+        a_slgmres_e(eye(3), ones(3, 1), 2, [], [], [], [], [], [], [], [], x0);
     catch ME
         msg = "Dimension mismatch between matrix A and initial guess xInitial.";
         assert(matches(ME.message, msg));
@@ -165,14 +194,15 @@ end
 % ----> Fallback dispatch tests
 % =========================================================================
 
-function test_full_gmres_when_m_equals_n()
-    % When m == n, SLGMRES-E must fall back to unrestarted built-in GMRES.
+function test_full_gmres_when_mInitial_equals_n()
+    % When mInitial == n, A-SLGMRES-E must fall back to unrestarted
+    % built-in GMRES.
 
     A = eye(3);
     b = ones(3, 1);
 
     x1 = gmres(A, b);
-    [x2, flag, relresvec, kdvec, time] = slgmres_e(A, b, 3);
+    [x2, flag, relresvec, kdvec, time] = a_slgmres_e(A, b, 3);
 
     assertElementsAlmostEqual(x1, x2);
     assert(flag == 1);
@@ -189,30 +219,28 @@ function test_default_parameters_identity_matrix()
     A = eye(3);
     b = ones(3, 1);
 
-    [x, flag, ~, ~, ~] = slgmres_e(A, b);
+    [x, flag, ~, ~, ~] = a_slgmres_e(A, b);
 
     assertElementsAlmostEqual(x, ones(3, 1));
     assert(flag == 1);
 end
 
 function test_outputs_identity_matrix_small()
-    % Solve I*x = [2;3;4] with m = 2, l = 1, d = 1. The identity system
-    % converges on the very first (plain) cycle, before any switching
-    % decision is exercised. A*v1 is parallel to v1 for A = I, so the
-    % Arnoldi loop hits a happy breakdown after a single step regardless
-    % of m -- kdvec(2) == 1, matching the same case documented in
-    % test_gmres_dr.m.
+    % Solve I*x = [2;3;4] with mInitial = 2, l = 1, d = 1. A*v1 is
+    % parallel to v1 for A = I, so the Arnoldi loop hits a happy
+    % breakdown after a single step regardless of m (same case documented
+    % in test_gmres_dr.m and test_slgmres_e.m).
 
     A = eye(3);
     b = [2; 3; 4];
-    m = 2;
+    mInitial = 2;
     l = 1;
     d = 1;
     tol = 1e-9;
     maxit = 100;
 
     [x, flag, relresvec, kdvec, time] = ...
-        slgmres_e(A, b, m, l, d, [], tol, maxit);
+        a_slgmres_e(A, b, mInitial, [], [], l, d, [], [], tol, maxit);
 
     assertElementsAlmostEqual(x, [2; 3; 4]);
     assert(flag == 1);
@@ -226,22 +254,18 @@ end
 % =========================================================================
 
 function test_embree_3x3_toy_example()
-    % Test SLGMRES-E on the 3x3 system from Embree (1999). m = 2 leaves no
-    % room for a distinct "fresh" subspace once either augmentation type
-    % is added (m + l or m + d exceeds n only mildly), but the switching
-    % logic itself is still exercised meaningfully across cycles.
-
     load('embree3.mat', 'Problem');
     A = Problem.A;
     b = Problem.b;
 
-    m = 2;
+    mInitial = 2;
     l = 1;
     d = 1;
     tol = 1e-6;
     maxit = 100;
 
-    [x, flag, ~, ~, time] = slgmres_e(A, b, m, l, d, [], tol, maxit);
+    [x, flag, ~, ~, time] = ...
+        a_slgmres_e(A, b, mInitial, [], [], l, d, [], [], tol, maxit);
 
     assertElementsAlmostEqual(x, [8; -7; 1], 'relative', 1e-4);
     assertEqual(flag, 1);
@@ -257,13 +281,14 @@ function test_sherman1()
     A = Problem.A;
     b = Problem.b;
 
-    m = 27;
+    mInitial = 27;
     l = 3;
     d = 3;
     tol = 1e-12;
     maxit = 1000;
 
-    [~, flag, relresvec, ~, time] = slgmres_e(A, b, m, l, d, [], tol, maxit);
+    [~, flag, relresvec, ~, time] = ...
+        a_slgmres_e(A, b, mInitial, [], [], l, d, [], [], tol, maxit);
 
     assertEqual(flag, 1);
     assert(relresvec(end) < tol);
@@ -275,44 +300,50 @@ function test_sherman4()
     A = Problem.A;
     b = Problem.b;
 
-    m = 27;
+    mInitial = 27;
     l = 3;
     d = 3;
     tol = 1e-12;
     maxit = 1000;
 
-    [~, flag, relresvec, ~, time] = slgmres_e(A, b, m, l, d, [], tol, maxit);
+    [~, flag, relresvec, ~, time] = ...
+        a_slgmres_e(A, b, mInitial, [], [], l, d, [], [], tol, maxit);
 
     assertEqual(flag, 1);
     assert(relresvec(end) < tol);
     assert(time > 0 && time < 300);
 end
 
-function test_sherman5_matches_cabral_reference()
-    % Regression test against Cabral, Schaerer & Bhaya (2020)'s own
-    % reference implementation (Adaptive_lgmres_e_switch.m), run with the
-    % exact parameters from their master_algoritmos.m driver. Verified by
-    % direct numerical comparison: the reference converges in 363 cycles
-    % to a final relative residual of 9.294759e-10; this port must match
-    % essentially exactly (both use the same switching decision at every
-    % single cycle -- verified cycle-by-cycle during development).
+function test_sherman5_grows_m_and_converges()
+    % Regression/lock test on the same problem and parameters used in
+    % Cabral, Schaerer & Bhaya (2020)'s own numerical experiments
+    % (master_algoritmos.m: mApd=28, dApd=2, lApd=2, alpha=2, delta=0.8,
+    % epsilon=0.01). This port does not reproduce the reference script's
+    % exact cycle count -- see the deviation documented in a_slgmres_e.m's
+    % docstring -- so this pins down this port's own validated behavior
+    % (flag, final residual, and that m does grow beyond mInitial) rather
+    % than the reference's specific numbers.
 
     load('sherman5.mat', 'Problem');
     A = Problem.A;
     b = Problem.b;
 
-    m = 28;
+    mInitial = 28;
+    mMinMax = [];
+    mStep = [];
     l = 2;
     d = 2;
-    epsilon0 = 0.01;
+    epsilonThreshold = 0.01;
+    alphaPD = [2; 0.8];
     tol = 1e-9;
     maxit = 1000;
 
-    [~, flag, relresvec, ~, time] = ...
-        slgmres_e(A, b, m, l, d, epsilon0, tol, maxit);
+    [~, flag, rv, kv, t] = a_slgmres_e(A, b, mInitial, mMinMax, mStep, ...
+                                       l, d, epsilonThreshold, alphaPD, ...
+                                       tol, maxit);
 
     assertEqual(flag, 1);
-    assertEqual(length(relresvec), 364);
-    assertElementsAlmostEqual(relresvec(end), 9.294759e-10, 'relative', 1e-2);
-    assert(time > 0 && time < 300);
+    assert(rv(end) < tol);
+    assert(max(kv) > mInitial + d);
+    assert(t > 0 && t < 300);
 end
