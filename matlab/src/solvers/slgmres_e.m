@@ -374,6 +374,20 @@ function [x, flag, relresvec, kdvec, time] = ...
             V(:, m + 1:s) = fliplr(zMat(:, 1:lUse));
         else
             % --- GMRES-E-style cycle ---
+            %
+            % Unlike gmres_e.m, dy IS sliced to d columns here, and
+            % deliberately so: this port is validated cycle-by-cycle
+            % against Cabral's own reference implementation
+            % (jcc_codigos_may_2023/Adaptive_lgmres_e_switch.m), and that
+            % reference hard-codes s = m + d and only ever reads
+            % dy(:, 1:d) (via a loop bounded at j <= m+d, indexing
+            % dy(:, j-m)) -- functionally identical to an explicit
+            % dy(:, 1:d) slice, even though harmonic_ritz_vectors can
+            % return more columns when a harmonic Ritz value is complex.
+            % Passing dy in full (as gmres_e.m now does, per Morgan
+            % (1995) step 5) would break that match. See
+            % test_sherman5_matches_cabral_reference for the exact
+            % cycle-count/residual values this must reproduce.
             [H, V, s] = ...
                 augmented_gram_schmidt_arnoldi(A, v1, m, fliplr(dy(:, 1:d)));
             [HUpTri, g] = plane_rotations(H, beta);

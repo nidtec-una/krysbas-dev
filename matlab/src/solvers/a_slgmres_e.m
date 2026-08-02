@@ -455,6 +455,17 @@ function [x, flag, relresvec, kdvec, time] = ...
             V(:, m + 1:s) = fliplr(zMat(:, 1:lUse));
         else
             % --- GMRES-E-style cycle (using the just-grown m) ---
+            %
+            % dy IS sliced to d columns here, matching slgmres_e.m: this
+            % family of algorithms is built on Cabral's reference
+            % implementations (jcc_codigos_may_2023/), whose GMRES-E-style
+            % branch (e.g. Adaptive_PD_lgmres_e.m) hard-codes s = m + d
+            % and only ever reads dy(:, 1:d) -- functionally identical to
+            % this explicit slice, even though harmonic_ritz_vectors can
+            % return more columns when a harmonic Ritz value is complex.
+            % See slgmres_e.m's GMRES-E-style branch for the full
+            % rationale, and gmres_e.m (which has no such reference to
+            % match) for why that solver instead uses dy in full.
             [H, V, s] = ...
                 augmented_gram_schmidt_arnoldi(A, v1, m, fliplr(dy(:, 1:d)));
             [HUpTri, g] = plane_rotations(H, beta);
