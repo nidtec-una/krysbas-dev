@@ -13,7 +13,10 @@ accelerating convergence for matrices with a few small, problematic eigenvalues.
 - `m::Int=0`: Krylov restart dimension; defaults to `min(n, 10)`. Setting `m == n`
   dispatches to full unrestarted GMRES.
 - `d::Int=-1`: number of harmonic Ritz vectors to append; defaults to `min(m, 3)`.
-  Setting `d == 0` dispatches to standard restarted GMRES(*m*).
+  Setting `d == 0` dispatches to standard restarted GMRES(*m*). The augmented
+  subspace can exceed `m+d` when a harmonic Ritz value is complex (its real
+  and imaginary parts are kept as two separate vectors, per [1]'s literal
+  step 5); see the comment in the restart loop below for rationale.
 - `tol::Real=1e-6`: relative residual tolerance for convergence
 - `maxit::Int=0`: maximum number of restart cycles; defaults to `min(n, 10)`
 - `x_initial::AbstractVector=[]`: initial guess; defaults to the zero vector
@@ -157,13 +160,47 @@ function gmres_e(
         beta = norm(r)
         v1 = r / beta
 
-        H, V, s = augmented_gram_schmidt_arnoldi(A, v1, m, dy[:, d:-1:1])
+        # dy is NOT sliced to d columns here: harmonic_ritz_vectors can
+        # return more than d columns when a requested harmonic Ritz value
+        # is complex (one half of a conjugate pair split into separate
+        # real and imaginary directions, per step 5, p. 1161 of [1]:
+        # "separate g_i into real and complex parts if it is complex and
+        # treat as two distinct vectors"). Slicing to dy[:, 1:d] would
+        # silently discard the imaginary half in that case, deviating
+        # from [1]'s literal algorithm; augmented_gram_schmidt_arnoldi
+        # already derives its augmented dimension from size(appendV, 2),
+        # so passing dy in full is both correct and sufficient.
+        #
+        # An earlier version of this code truncated to dy[:, 1:d],
+        # motivated by a single benchmark on sherman5 (m=27, d=3) that
+        # appeared to show truncation converging ~6.7x faster (370 vs.
+        # 2484 cycles). A follow-up study perturbing that same problem's
+        # right-hand side by ~1e-10 (relative) showed this was not a real
+        # effect: GMRES-E on that matrix/config sits on a genuine
+        # stagnation boundary where either policy stalls completely on
+        # about 40% of perturbed seeds, with no correlation between which
+        # seeds break truncation vs. full dy. The original comparison
+        # just happened to sample a favorable seed for truncation and an
+        # unfavorable one for full dy. With the performance argument
+        # debunked, fidelity to [1] wins by default. The chaotic
+        # sensitivity itself may be worth a closer theoretical look
+        # (flagged for discussion with the wider KrySBAS group), but it's
+        # a property of GMRES-E restart dynamics near stagnation, not of
+        # this truncation choice specifically.
+        H, V, s = augmented_gram_schmidt_arnoldi(A, v1, m, reverse(dy, dims = 2))
         HUpTri, g = plane_rotations(H, beta)
 
         Rs = HUpTri[1:s, 1:s]
         minimizer = Rs \ g[1:s]
 
-        # Replace augmented columns with harmonic Ritz vectors (step 4 in [1])
+        # Replace augmented columns with harmonic Ritz vectors (step 4 in
+        # [1]). n_aug (= s - m) may be less than size(dy, 2) when
+        # augmented_gram_schmidt_arnoldi hits near-breakdown partway
+        # through processing the appended columns (or when the G
+        # conditioning guard in harmonic_ritz_vectors skipped
+        # augmentation this cycle, leaving dy empty); only the columns of
+        # dy that were actually incorporated (the first n_aug, in the
+        # natural order they were processed in) should overwrite V.
         n_aug = max(0, s - m)
         V_use = copy(V)
         if n_aug > 0

@@ -45,7 +45,12 @@ function dy = harmonic_ritz_vectors(F, G, k, V, tol)
     %
     %   dy:         n-by-k matrix
     %               Matrix whose column vectors are the approximate
-    %               eigenvectors of the matrix A.
+    %               eigenvectors of the matrix A. May have more than k
+    %               columns when a requested harmonic Ritz value is
+    %               complex (its real and imaginary parts are kept as two
+    %               separate vectors, per step 5, p. 1161 of [1]), or 0
+    %               columns when G is too ill-conditioned to safely form
+    %               the eigenvector problem this cycle.
     %
     %   References:
     %   -----------
@@ -74,8 +79,37 @@ function dy = harmonic_ritz_vectors(F, G, k, V, tol)
     %   You should have received a copy of the GNU General Public License along
     %   with this file.  If not, see <http://www.gnu.org/licenses/>.
     %
-    opts.tol = tol;
     s = size(F, 1);
+
+    % Guard against a numerically indefinite G.
+    %
+    % Morgan's algorithm assumes G = R'*R is exactly SPD (it is, in exact
+    % arithmetic, since R is the upper-triangular QR factor). After many
+    % restart cycles, previously-added complex-pair augmentation vectors
+    % (see below) can leave the augmented Krylov basis rank deficient, so
+    % rounding breaks that assumption in practice and R develops a
+    % near-zero diagonal entry, making G indefinite. Rather than let
+    % 'eigs' error out on a non-positive-definite G, skip eigenvector
+    % augmentation for this cycle: an empty dy makes the next call to
+    % augmented_gram_schmidt_arnoldi fall back to a plain restarted GMRES
+    % cycle, which restores a fresh, well-conditioned Krylov basis and
+    % lets the eigenvector augmentation resume safely on a later cycle.
+    %
+    % Note this is NOT an ill-conditioning (rcond) check: G = R'*R
+    % squares the condition number of R by construction (this is exactly
+    % Morgan's own G = R'*R shortcut, [1] eq. 16), so rcond(G) is
+    % routinely as small as 1e-12--1e-14 on perfectly healthy, converging
+    % cycles. A relative-conditioning threshold was tried and triggered
+    % on nearly every cycle as a false positive; only genuine loss of
+    % positive-definiteness (chol failure) reliably distinguishes the
+    % actual failure mode observed (eigs erroring on sherman5, d=5).
+    [~, cholFlag] = chol(G);
+    if cholFlag ~= 0
+        dy = zeros(size(V, 1), 0);
+        return
+    end
+
+    opts.tol = tol;
     opts.v0 = ones(s, 1);
     E = zeros(s, k);
     D = zeros(k, 1);

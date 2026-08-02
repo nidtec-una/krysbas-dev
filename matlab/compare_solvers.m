@@ -3,21 +3,31 @@
 %   Description:
 %   ------------
 %
-%   Compares the four KrySBAS solvers
+%   Compares the six KrySBAS solvers, listed chronologically by the
+%   publication year of the method each one implements:
 %
-%       GMRES-E(m, d)  -- restarted GMRES augmented with d harmonic Ritz
-%                         vectors (Morgan, 1995)
-%       LGMRES(m, l)   -- restarted GMRES augmented with l error
-%                         approximation vectors (Baker et al., 2005)
-%       PD-GMRES(m)    -- restarted GMRES with a PD controller that adapts
-%                         m automatically (Nunez et al., 2018)
-%       GMRES-DR(m, k) -- restarted GMRES with deflated restarting using
-%                         k harmonic Ritz vectors (Morgan, 2002)
+%       GMRES-E(m, d)         -- restarted GMRES augmented with d harmonic
+%                                 Ritz vectors (Morgan, 1995)
+%       GMRES-DR(m, k)        -- restarted GMRES with deflated restarting
+%                                 using k harmonic Ritz vectors
+%                                 (Morgan, 2002)
+%       LGMRES(m, l)          -- restarted GMRES augmented with l error
+%                                 approximation vectors (Baker et al., 2005)
+%       PD-GMRES(m)           -- restarted GMRES with a PD controller that
+%                                 adapts m automatically (Nunez et al., 2018)
+%       SLGMRES-E(m, l, d)    -- restarted GMRES that switches, cycle by
+%                                 cycle, between LGMRES-style and GMRES-E
+%                                 -style augmentation based on a
+%                                 convergence-slowdown signal
+%                                 (Cabral et al., 2020)
+%       A-SLGMRES-E(mj, l, d) -- SLGMRES-E plus a PD-adaptive restart
+%                                 parameter that grows on stagnating cycles
+%                                 (Cabral et al., 2020)
 %
 %   For each test matrix the script produces one figure showing the base-10
 %   logarithm of the relative residual norm versus the restart cycle index
-%   for all four solvers.  A horizontal dashed line marks the convergence
-%   tolerance.
+%   for all six solvers (plus a plain GMRES(m) baseline).  A horizontal
+%   dashed line marks the convergence tolerance.
 %
 %   Usage:
 %   ------
@@ -99,6 +109,15 @@ alpha_d   =  5;
 % GMRES-DR: number of harmonic Ritz vectors to deflate and recycle
 k_gmresdr = 3;
 
+% SLGMRES-E / A-SLGMRES-E: reuse l_lgmres and d_gmrese above so the
+% switching solvers augment with the same number of vectors as their
+% non-switching counterparts. epsilon_threshold is the slowdown signal
+% (Cabral et al., 2020, eq. 33-35); alpha_slgmres is A-SLGMRES-E's own
+% [alpha_P; alpha_D] pair (distinct from PD-GMRES's, per Cabral et al.,
+% 2020, table with tuned values [2; 0.8]).
+epsilon_threshold = 0.01;
+alpha_slgmres = [2; 0.8];
+
 % =========================================================================
 % ----> Colour and line-style scheme (one style per solver)
 % =========================================================================
@@ -118,7 +137,13 @@ styles = struct( ...
                                    'label', 'PD-GMRES'), ...
                 'gmres_dr', struct('color', [0.80 0.47 0.65], ...
                                    'line', '-.', 'marker', 'd', ...
-                                   'label', 'GMRES-DR') ...
+                                   'label', 'GMRES-DR'), ...
+                'slgmres_e', struct('color', [0.35 0.70 0.90], ...
+                                    'line', '-', 'marker', '*', ...
+                                    'label', 'SLGMRES-E'), ...
+                'a_slgmres_e', struct('color', [0.00 0.00 0.00], ...
+                                      'line', '--', 'marker', '+', ...
+                                      'label', 'A-SLGMRES-E') ...
                );
 
 % =========================================================================
@@ -188,6 +213,23 @@ for mi = 1:length(matrices)
     fprintf('  GMRES-DR  : flag=%d  cycles=%3d  time=%.3fs\n', ...
             flag_dr, numel(rrv_dr) - 1, t_dr);
 
+    % SLGMRES-E(m, l, d)
+    [~, flag_sle, rrv_sle, ~, t_sle] = slgmres_e(A, b, m, l_lgmres, ...
+                                                 d_gmrese, ...
+                                                 epsilon_threshold, ...
+                                                 tol, maxit);
+    fprintf('  SLGMRES-E : flag=%d  cycles=%3d  time=%.3fs\n', ...
+            flag_sle, numel(rrv_sle) - 1, t_sle);
+
+    % A-SLGMRES-E(mInitial, l, d)
+    [~, flag_asle, rrv_asle, ~, t_asle] = a_slgmres_e(A, b, m, [], [], ...
+                                                      l_lgmres, d_gmrese, ...
+                                                      epsilon_threshold, ...
+                                                      alpha_slgmres, ...
+                                                      tol, maxit);
+    fprintf('  A-SLGMRES-E: flag=%d  cycles=%3d  time=%.3fs\n', ...
+            flag_asle, numel(rrv_asle) - 1, t_asle);
+
     % ------------------------------------------------------------------
     % Build legend labels with solver parameters and CPU time.
     % LaTeX interpreter is used so \alpha_P, \alpha_D render as Greek.
@@ -214,16 +256,28 @@ for mi = 1:length(matrices)
               '(m=' num2str(m) ',\ k=' num2str(k_gmresdr) ...
               ',\ t=' sprintf('%.2f', t_dr) '\ \mathrm{s})$'];
 
+    lbl_sle = ['$\mathrm{SLGMRES\mbox{-}E}\ ' ...
+               '(m=' num2str(m) ',\ l=' num2str(l_lgmres) ...
+               ',\ d=' num2str(d_gmrese) ...
+               ',\ t=' sprintf('%.2f', t_sle) '\ \mathrm{s})$'];
+
+    lbl_asle = ['$\mathrm{A\mbox{-}SLGMRES\mbox{-}E}\ ' ...
+                '(m_0=' num2str(m) ',\ l=' num2str(l_lgmres) ...
+                ',\ d=' num2str(d_gmrese) ...
+                ',\ t=' sprintf('%.2f', t_asle) '\ \mathrm{s})$'];
+
     lbl_tol = ['$\mathrm{tol} = ' sprintf('%g', tol) '$'];
 
     % ------------------------------------------------------------------
     % Build cycle-index vectors (0-based: entry 1 = before iteration 1)
     % ------------------------------------------------------------------
-    cycles_gm = 0:numel(rrv_gm) - 1;
-    cycles_e  = 0:numel(rrv_e)  - 1;
-    cycles_l  = 0:numel(rrv_l)  - 1;
-    cycles_p  = 0:numel(rrv_p)  - 1;
-    cycles_dr = 0:numel(rrv_dr) - 1;
+    cycles_gm   = 0:numel(rrv_gm)   - 1;
+    cycles_e    = 0:numel(rrv_e)    - 1;
+    cycles_l    = 0:numel(rrv_l)    - 1;
+    cycles_p    = 0:numel(rrv_p)    - 1;
+    cycles_dr   = 0:numel(rrv_dr)   - 1;
+    cycles_sle  = 0:numel(rrv_sle)  - 1;
+    cycles_asle = 0:numel(rrv_asle) - 1;
 
     % ------------------------------------------------------------------
     % Plot
@@ -268,9 +322,24 @@ for mi = 1:length(matrices)
              'LineWidth', 1.5, 'MarkerSize', 5,   ...
              'DisplayName', lbl_dr);
 
+    semilogy(cycles_sle, rrv_sle, ...
+             'Color',     styles.slgmres_e.color,  ...
+             'LineStyle', styles.slgmres_e.line,   ...
+             'Marker',    styles.slgmres_e.marker, ...
+             'LineWidth', 1.5, 'MarkerSize', 5,    ...
+             'DisplayName', lbl_sle);
+
+    semilogy(cycles_asle, rrv_asle, ...
+             'Color',     styles.a_slgmres_e.color,  ...
+             'LineStyle', styles.a_slgmres_e.line,   ...
+             'Marker',    styles.a_slgmres_e.marker, ...
+             'LineWidth', 1.5, 'MarkerSize', 5,      ...
+             'DisplayName', lbl_asle);
+
     % Horizontal tolerance line
     x_max = max([cycles_gm(end), cycles_e(end), ...
-                 cycles_l(end), cycles_p(end), cycles_dr(end)]);
+                 cycles_l(end), cycles_p(end), cycles_dr(end), ...
+                 cycles_sle(end), cycles_asle(end)]);
     semilogy([0, x_max], [tol, tol], ...
              'k--', 'LineWidth', 1.0, 'DisplayName', lbl_tol);
 

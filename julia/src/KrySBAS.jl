@@ -17,7 +17,9 @@ include("solvers/gmres_e.jl")
 include("solvers/lgmres.jl")
 include("solvers/pd_gmres.jl")
 include("solvers/gmres_dr.jl")
+include("solvers/slgmres_e.jl")
+include("solvers/a_slgmres_e.jl")
 
-export gmres_e, lgmres, pd_gmres, gmres_dr
+export gmres_e, lgmres, pd_gmres, gmres_dr, slgmres_e, a_slgmres_e
 
 end
