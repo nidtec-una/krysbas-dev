@@ -28,6 +28,7 @@ include("test_pd_gmres.jl")
 include("test_gmres_dr.jl")
 include("test_qrupdate_gs.jl")
 include("test_slgmres_e.jl")
+include("test_a_slgmres_e.jl")
 include("test_poisson.jl")
 
 @testset "KrySBAS.jl" begin
