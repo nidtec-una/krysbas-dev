@@ -233,8 +233,12 @@ function slgmres_e(
         else
             # --- GMRES-E-style cycle ---
             processing_order = dy[:, 1:d]
-            H, V, s_cyc =
-                augmented_gram_schmidt_arnoldi(A, v1, m, reverse(processing_order, dims = 2))
+            H, V, s_cyc = augmented_gram_schmidt_arnoldi(
+                A,
+                v1,
+                m,
+                reverse(processing_order, dims = 2),
+            )
             h_up_tri, g = plane_rotations(H, beta)
             rs = h_up_tri[1:s_cyc, 1:s_cyc]
             gs = g[1:s_cyc]
