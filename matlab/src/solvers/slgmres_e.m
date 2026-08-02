@@ -1,5 +1,6 @@
 function [x, flag, relresvec, kdvec, time] = ...
-    slgmres_e(A, b, m, l, d, epsilonThreshold, tol, maxit, xInitial, eigstol)
+    slgmres_e(A, b, m, l, d, epsilonThreshold, tol, maxit, xInitial, ...
+              eigstol, varargin)
     % SLGMRES-E algorithm
     %
     %   Description:
