@@ -1,9 +1,17 @@
 # Solver API
 
+Solvers are listed chronologically, by the publication year of the method each one implements.
+
 ## GMRES-E
 
 ```@docs
 gmres_e
+```
+
+## GMRES-DR
+
+```@docs
+gmres_dr
 ```
 
 ## LGMRES
@@ -18,8 +26,9 @@ lgmres
 pd_gmres
 ```
 
-## GMRES-DR
+## SLGMRES-E / A-SLGMRES-E
 
 ```@docs
-gmres_dr
+slgmres_e
+a_slgmres_e
 ```
